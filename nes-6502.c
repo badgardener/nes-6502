@@ -219,8 +219,126 @@ static void do_oamdma_cycle(CPU_6502 *c) {
   }
 }
 
+static void fetch_imm(CPU_6502 *c) {
+  c->instr.addr = c->reg.PC;
+  c->reg.PC++;
+  c->instr.addr_fetched = true;
+}
+
+static void fetch_zpg(CPU_6502 *c) {
+  switch (c->instr.step) {
+  case 0: {
+    schedule_read(c, c->reg.PC);
+    break;
+  }
+
+  case 1: {
+    c->instr.addr = read_bus(c);
+    c->reg.PC++;
+    c->instr.addr_fetched = true;
+    c->instr.step = 0;
+    break;
+  }
+  }
+}
+
+static void fetch_zp_n(CPU_6502 *c, ubyte *v) {
+  switch (c->instr.step) {
+  case 0: {
+    schedule_read(c, c->reg.PC);
+    break;
+  }
+
+  case 1: {
+    c->instr.ptr = read_bus(c);
+    c->reg.PC++;
+    schedule_read(c, c->instr.ptr);
+    break;
+  }
+
+  case 2: {
+    c->instr.addr = (c->instr.ptr + *v) & 0xFF;
+    c->instr.addr_fetched = true;
+    c->instr.step = 0;
+    break;
+  }
+  }
+}
+
+static inline void fetch_zpx(CPU_6502 *c) { fetch_zp_n(c, &c->reg.X); }
+static inline void fetch_zpy(CPU_6502 *c) { fetch_zp_n(c, &c->reg.Y); }
+static void fetch_abs(CPU_6502 *c) {
+  switch (c->instr.step) {
+  case 0: {
+    schedule_read(c, c->reg.PC);
+    break;
+  }
+
+  case 1: {
+    set_lsb(&c->instr.addr, read_bus(c));
+    c->reg.PC++;
+    schedule_read(c, c->reg.PC);
+    break;
+  }
+
+  case 2: {
+    set_msb(&c->instr.addr, read_bus(c));
+    c->reg.PC++;
+    c->instr.addr_fetched = true;
+    c->instr.step = 0;
+    break;
+  }
+  }
+}
+
+static void fetch_ab_n(CPU_6502 *c, ubyte *v, bool force_page_cross) {
+  switch (c->instr.step) {
+  case 0: {
+    schedule_read(c, c->reg.PC);
+    break;
+  }
+
+  case 1: {
+    set_lsb(&c->instr.ptr, read_bus(c));
+    c->reg.PC++;
+    schedule_read(c, c->reg.PC);
+    break;
+  }
+
+  case 2: {
+    set_msb(&c->instr.ptr, read_bus(c));
+    c->reg.PC++;
+    c->instr.addr = c->instr.ptr + *v;
+
+    if (!force_page_cross &&
+        (c->instr.addr & 0xFF00) == (c->instr.ptr & 0xFF00)) {
+      c->instr.addr_fetched = true;
+      c->instr.step = 0;
+      return;
+    }
+
+    schedule_read(c, (c->instr.ptr & 0xFF00) | get_lsb(&c->instr.addr));
+    break;
+  }
+
+  case 3: {
+    c->instr.addr_fetched = true;
+    c->instr.step = 0;
+    break;
+  }
+  }
+}
+
+static inline void fetch_abx(CPU_6502 *c, bool force_page_cross) {
+  fetch_ab_n(c, &c->reg.X, force_page_cross);
+}
+
+static inline void fetch_aby(CPU_6502 *c, bool force_page_cross) {
+  fetch_ab_n(c, &c->reg.Y, force_page_cross);
+}
+
 static void fetch_idx(CPU_6502 *c) {
-  switch (c->interrupt.step) {
+  switch (c->instr.step) {
   case 0: {
     schedule_read(c, c->reg.PC);
     break;
@@ -228,20 +346,65 @@ static void fetch_idx(CPU_6502 *c) {
 
   case 1: {
     c->instr.ptr = (read_bus(c) + c->reg.X) & 0xFF;
+    c->reg.PC++;
     schedule_read(c, c->instr.ptr);
     break;
   }
 
   case 2: {
     set_lsb(&c->instr.addr, read_bus(c));
-    c->instr.ptr++;
-    c->instr.ptr &= 0xFF;
+    c->instr.ptr = (c->instr.ptr + 1) & 0xFF;
     schedule_read(c, c->instr.ptr);
     break;
   }
 
   case 3: {
     set_msb(&c->instr.addr, read_bus(c));
+    c->instr.addr_fetched = true;
+    c->instr.step = 0;
+    break;
+  }
+  }
+}
+
+static void fetch_idy(CPU_6502 *c, bool force_page_cross) {
+  switch (c->instr.step) {
+  case 0: {
+    schedule_read(c, c->reg.PC);
+    break;
+  }
+
+  case 1: {
+    c->instr.ptr = read_bus(c);
+    c->reg.PC++;
+    schedule_read(c, c->instr.ptr);
+    break;
+  }
+
+  case 2: {
+    set_lsb(&c->instr.addr, read_bus(c));
+    c->instr.ptr = (c->instr.ptr + 1) & 0xFF;
+    schedule_read(c, c->instr.ptr);
+    break;
+  }
+
+  case 3: {
+    set_msb(&c->instr.addr, read_bus(c));
+
+    uword base = c->instr.addr;
+    c->instr.addr += c->reg.Y;
+
+    if (!force_page_cross && (base & 0xFF00) == (c->instr.addr & 0xFF00)) {
+      c->instr.addr_fetched = true;
+      c->instr.step = 0;
+      return;
+    }
+
+    schedule_read(c, (base & 0xFF00) | get_lsb(&c->instr.addr));
+    break;
+  }
+
+  case 4: {
     c->instr.addr_fetched = true;
     c->instr.step = 0;
     break;
@@ -304,7 +467,102 @@ static void do_opcode_cycle(CPU_6502 *c) {
     break;
   }
 
-  case 0x02: { // KIL/JAM
+  case 0x05: { // ORA $ZPG
+    if (!c->instr.addr_fetched) {
+      fetch_zpg(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_ora(c);
+    }
+
+    break;
+  }
+
+  case 0x09: { // ORA $IMM
+    if (!c->instr.addr_fetched) {
+      fetch_imm(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_ora(c);
+    }
+
+    break;
+  }
+
+  case 0x0D: { // ORA $ABS
+    if (!c->instr.addr_fetched) {
+      fetch_abs(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_ora(c);
+    }
+
+    break;
+  }
+
+  case 0x11: { // ORA $IDY
+    if (!c->instr.addr_fetched) {
+      fetch_idy(c, false);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_ora(c);
+    }
+
+    break;
+  }
+
+  case 0x15: { // ORA $ZPX
+    if (!c->instr.addr_fetched) {
+      fetch_zpx(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_ora(c);
+    }
+
+    break;
+  }
+
+  case 0x19: { // ORA $ABY
+    if (!c->instr.addr_fetched) {
+      fetch_aby(c, false);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_ora(c);
+    }
+
+    break;
+  }
+
+  case 0x1D: { // ORA $ABX
+    if (!c->instr.addr_fetched) {
+      fetch_abx(c, false);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_ora(c);
+    }
+
+    break;
+  }
+
+  case 0x02:
+  case 0x12:
+  case 0x22:
+  case 0x32:
+  case 0x42:
+  case 0x52:
+  case 0x62:
+  case 0x72:
+  case 0x92:
+  case 0xB2:
+  case 0xD2:
+  case 0xF2: { // KIL/JAM
     execute_kil_jam(c);
     break;
   }
