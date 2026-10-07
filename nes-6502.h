@@ -44,6 +44,7 @@ typedef struct CPU_6502 {
 
   struct instr {
     uword addr;
+    uword ptr;
     bool addr_fetched;
     byte step;
     ubyte opcode;

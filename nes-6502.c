@@ -3,6 +3,7 @@
 static inline void set_lsb(uword *w, ubyte v) {
   *w = (*w & 0xFF00) | (v & 0xFF);
 }
+
 static inline void set_msb(uword *w, ubyte v) { *w = (v << 8) | (*w & 0xFF); }
 static inline ubyte get_lsb(const uword *w) { return *w & 0xFF; }
 static inline ubyte get_msb(const uword *w) { return *w >> 8; }
@@ -36,6 +37,20 @@ static inline bool get_flag(const CPU_6502 *c, ubyte f) {
   return (c->reg.P & f) != 0;
 }
 
+static inline void set_flag_zn(CPU_6502 *c, ubyte v) {
+  if (v == 0) {
+    set_flag(c, flag_z);
+  } else {
+    clear_flag(c, flag_z);
+  }
+
+  if (v & 0x80) {
+    set_flag(c, flag_n);
+  } else {
+    clear_flag(c, flag_n);
+  }
+}
+
 static inline bool interrupt(const CPU_6502 *c) {
   bool v = c->interrupt.step > 0;
   v |= c->interrupt.breakStarted;
@@ -59,6 +74,7 @@ static void do_reset_cycle(CPU_6502 *c) {
     c->interrupt.breakStarted = false;
 
     c->instr.addr = 0;
+    c->instr.ptr = 0;
     c->instr.addr_fetched = false;
     c->instr.opcode = 0;
     c->instr.step = 0;
@@ -203,6 +219,69 @@ static void do_oamdma_cycle(CPU_6502 *c) {
   }
 }
 
+static void fetch_idx(CPU_6502 *c) {
+  switch (c->interrupt.step) {
+  case 0: {
+    schedule_read(c, c->reg.PC);
+    break;
+  }
+
+  case 1: {
+    c->instr.ptr = (read_bus(c) + c->reg.X) & 0xFF;
+    schedule_read(c, c->instr.ptr);
+    break;
+  }
+
+  case 2: {
+    set_lsb(&c->instr.addr, read_bus(c));
+    c->instr.ptr++;
+    c->instr.ptr &= 0xFF;
+    schedule_read(c, c->instr.ptr);
+    break;
+  }
+
+  case 3: {
+    set_msb(&c->instr.addr, read_bus(c));
+    c->instr.addr_fetched = true;
+    c->instr.step = 0;
+    break;
+  }
+  }
+}
+
+static void execute_ora(CPU_6502 *c) {
+  switch (c->instr.step) {
+  case 0: {
+    schedule_read(c, c->instr.addr);
+    break;
+  }
+
+  case 1: {
+    c->reg.A |= read_bus(c);
+    set_flag_zn(c, c->reg.A);
+
+    c->instr.step = -1;
+    schedule_read(c, c->reg.PC);
+    break;
+  }
+  }
+}
+
+static void execute_kil_jam(CPU_6502 *c) {
+  switch (c->instr.step) {
+  case 0: {
+    schedule_read(c, c->reg.PC);
+    break;
+  }
+
+  case 1: {
+    c->jammed = true;
+    schedule_read(c, c->reg.PC);
+    break;
+  }
+  }
+}
+
 static void do_opcode_cycle(CPU_6502 *c) {
   switch (c->instr.opcode) {
   case 0x00: { // BRK $IMP
@@ -210,6 +289,23 @@ static void do_opcode_cycle(CPU_6502 *c) {
     c->interrupt.step = 1;
     c->instr.step = -1;
     schedule_read(c, c->reg.PC);
+    break;
+  }
+
+  case 0x01: { // ORA $IDX
+    if (!c->instr.addr_fetched) {
+      fetch_idx(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_ora(c);
+    }
+
+    break;
+  }
+
+  case 0x02: { // KIL/JAM
+    execute_kil_jam(c);
     break;
   }
 
