@@ -36,23 +36,29 @@ void read_cpu(Memory *m) {
   }
 }
 
-void log_cpu(CPU_6502 *c) {
-  printf("STEP %llu\n"
-         "  REG   PC=%04X A=%02X X=%02X Y=%02X P=%02X SP=%02X\n"
-         "  FLAG  N=%u V=%u U=%u B=%u D=%u I=%u Z=%u C=%u\n"
-         "  BUS   ADDR=%04X VAL=%02X WRITE=%u\n"
-         "  INSTR ADDR=%04X FETCHED=%u STEP=%d OPCODE=%02X\n"
-         "  RESET STEP=%u PENDING=%u\n"
-         "  INT   BRK=%u NMI=%u IRQ=%u STEP=%d\n"
-         "  CPU   JAMMED=%u\n\n",
-         (unsigned long long)c->steps, c->reg.PC, c->reg.A, c->reg.X, c->reg.Y,
-         c->reg.P, c->reg.SP, !!(c->reg.P & flag_n), !!(c->reg.P & flag_v),
-         !!(c->reg.P & flag_u), !!(c->reg.P & flag_b), !!(c->reg.P & flag_d),
-         !!(c->reg.P & flag_i), !!(c->reg.P & flag_z), !!(c->reg.P & flag_c),
-         c->bus.addr, c->bus.val, c->bus.write, c->instr.addr,
-         c->instr.addr_fetched, c->instr.step, c->instr.opcode, c->reset.step,
-         c->reset.pending, c->interrupt.breakStarted, c->interrupt.nmiPending,
-         c->interrupt.irqLine, c->interrupt.step, c->jammed);
+void log_cpu(const CPU_6502 *c) {
+  const char *g = "\033[32m";
+  const char *r = "\033[31m";
+  const char *x = "\033[0m";
+
+  printf("STEP: %lu %s%s%s\n  $%04X A:%02X X:%02X Y:%02X SP:%02X\n  "
+         "FLAGS: %sN %sV %s█ %sB %sD %sI %sZ %sC%s\n  %sRESET%s %u\n  %sIRQ "
+         "%sNMI %sBRK%s %u\n  OPCODE: %02X %s$%04X%s %u\n  BUS: $%04X %02X "
+         "%s%s%s\n  %sOAMDMA%s $%04X %02X %s%s%s\n\n",
+         c->steps, c->jammed ? r : g, c->jammed ? "JAMMED" : "RUNNING", x,
+         c->reg.PC, c->reg.A, c->reg.X, c->reg.Y, c->reg.SP,
+         c->reg.P & flag_n ? g : r, c->reg.P & flag_v ? g : r,
+         c->reg.P & flag_u ? g : r, c->reg.P & flag_b ? g : r,
+         c->reg.P & flag_d ? g : r, c->reg.P & flag_i ? g : r,
+         c->reg.P & flag_z ? g : r, c->reg.P & flag_c ? g : r, x,
+         c->reset.pending ? g : r, x, c->reset.step,
+         c->interrupt.irqLine ? g : r, c->interrupt.nmiPending ? g : r,
+         c->interrupt.breakStarted ? g : r, x, c->interrupt.step,
+         c->instr.opcode, c->instr.addr_fetched ? g : r, c->instr.addr, x,
+         c->instr.step, c->bus.addr, c->bus.val, c->bus.write ? g : r,
+         c->bus.write ? "WRITE" : "READ", x, c->oamdma.active ? g : r, x,
+         c->oamdma.addr, c->bus.val, c->oamdma.step & 1 ? r : g,
+         c->oamdma.step & 1 ? "READ" : "WRITE", x);
 }
 
 bool reset_memory(Memory *m, char *filename) {
@@ -110,13 +116,7 @@ bool reset_memory(Memory *m, char *filename) {
   }
 
   fclose(file);
-
   m->prg_size = prg_size;
-
-  printf("PRG ROM: %zu KB\n", prg_size / 1024);
-  printf("CHR ROM: %zu KB\n", chr_size / 1024);
-  printf("Mapper: %u\n", (header[6] >> 4) | (header[7] & 0xF0));
-
   return true;
 }
 

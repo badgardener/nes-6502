@@ -4,6 +4,7 @@
 #ifndef NES_BIN_DATATYPES
 #define NES_BIN_DATATYPES
 
+#include <stdbool.h>
 #include <stdint.h>
 
 typedef int8_t byte;
@@ -11,10 +12,6 @@ typedef int16_t word;
 typedef uint8_t ubyte;
 typedef uint16_t uword;
 typedef uint64_t counter;
-
-#define bool ubyte
-#define false 0
-#define true 1
 
 #endif // NES_BIN_DATATYPES
 
@@ -63,6 +60,12 @@ typedef struct CPU_6502 {
     bool irqLine;
     byte step;
   } interrupt;
+
+  struct oamdma {
+    bool active;
+    word step;
+    uword addr;
+  } oamdma;
 
   bool jammed;
 } CPU_6502;
