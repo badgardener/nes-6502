@@ -1,11 +1,8 @@
 #include "nes-6502.h"
 
 static inline void set_lsb(uword *w, ubyte v) { *w = (*w & 0xFF00) | v; }
-
 static inline void set_msb(uword *w, ubyte v) { *w = (v << 8) | (*w & 0xFF); }
-
 static inline ubyte get_lsb(const uword *w) { return *w & 0xFF; }
-
 static inline ubyte get_msb(const uword *w) { return *w >> 8; }
 
 static inline void schedule_read(CPU_6502 *c, uword addr) {
@@ -30,17 +27,12 @@ static inline void schedule_push(CPU_6502 *c, ubyte val) {
 }
 
 static inline ubyte get_pcl(const CPU_6502 *c) { return get_lsb(&c->reg.PC); }
-
 static inline ubyte get_pch(const CPU_6502 *c) { return get_msb(&c->reg.PC); }
-
 static inline void set_pcl(CPU_6502 *c, ubyte val) { set_lsb(&c->reg.PC, val); }
-
 static inline void set_pch(CPU_6502 *c, ubyte val) { set_msb(&c->reg.PC, val); }
 
 static inline void set_flag(CPU_6502 *c, ubyte f) { c->reg.P |= f; }
-
 static inline void clear_flag(CPU_6502 *c, ubyte f) { c->reg.P &= ~f; }
-
 static inline bool get_flag(const CPU_6502 *c, ubyte f) {
   return (c->reg.P & f) != 0;
 }
@@ -274,7 +266,6 @@ static void __fetch_zp_n(CPU_6502 *c, ubyte *v) {
 }
 
 static inline void fetch_zpx(CPU_6502 *c) { __fetch_zp_n(c, &c->reg.X); }
-
 static inline void fetch_zpy(CPU_6502 *c) { __fetch_zp_n(c, &c->reg.Y); }
 
 static void fetch_abs(CPU_6502 *c) {
@@ -474,9 +465,7 @@ static void __execute_ld_n(CPU_6502 *c, ubyte *b) {
 }
 
 static inline void execute_lda(CPU_6502 *c) { __execute_ld_n(c, &c->reg.A); }
-
 static inline void execute_ldx(CPU_6502 *c) { __execute_ld_n(c, &c->reg.X); }
-
 static inline void execute_ldy(CPU_6502 *c) { __execute_ld_n(c, &c->reg.Y); }
 
 static void __execute_st_n(CPU_6502 *c, ubyte *b) {
@@ -487,6 +476,7 @@ static void __execute_st_n(CPU_6502 *c, ubyte *b) {
   }
 
   case 1: {
+    c->instr.step = -1;
     schedule_read(c, c->reg.PC);
     break;
   }
@@ -494,13 +484,42 @@ static void __execute_st_n(CPU_6502 *c, ubyte *b) {
 }
 
 static inline void execute_sta(CPU_6502 *c) { __execute_st_n(c, &c->reg.A); }
-
 static inline void execute_stx(CPU_6502 *c) { __execute_st_n(c, &c->reg.X); }
-
 static inline void execute_sty(CPU_6502 *c) { __execute_st_n(c, &c->reg.Y); }
+
+static void execute_nop(CPU_6502 *c) {
+  switch (c->instr.step) {
+  case 0: {
+    schedule_read(c, c->instr.addr);
+    break;
+  }
+
+  case 1: {
+    c->instr.step = -1;
+    schedule_read(c, c->reg.PC);
+    break;
+  }
+  }
+}
 
 static void do_opcode_cycle(CPU_6502 *c) {
   switch (c->instr.opcode) {
+  case 0x02:
+  case 0x12:
+  case 0x22:
+  case 0x32:
+  case 0x42:
+  case 0x52:
+  case 0x62:
+  case 0x72:
+  case 0x92:
+  case 0xB2:
+  case 0xD2:
+  case 0xF2: { // KIL/JAM
+    execute_kil_jam(c);
+    break;
+  }
+
   case 0x00: { // BRK $IMP
     c->interrupt.breakStarted = true;
     c->interrupt.step = 1;
@@ -602,22 +621,6 @@ static void do_opcode_cycle(CPU_6502 *c) {
       execute_ora(c);
     }
 
-    break;
-  }
-
-  case 0x02:
-  case 0x12:
-  case 0x22:
-  case 0x32:
-  case 0x42:
-  case 0x52:
-  case 0x62:
-  case 0x72:
-  case 0x92:
-  case 0xB2:
-  case 0xD2:
-  case 0xF2: { // KIL/JAM
-    execute_kil_jam(c);
     break;
   }
 
@@ -993,8 +996,96 @@ static void do_opcode_cycle(CPU_6502 *c) {
     break;
   }
 
+  case 0x1A:
+  case 0x3A:
+  case 0x5A:
+  case 0x7A:
+  case 0xDA:
+  case 0xEA:
+  case 0xFA: { // NOP $IMP
+    if (c->instr.step == 0) {
+      c->instr.addr = c->reg.PC;
+    }
+
+    execute_nop(c);
+    break;
+  }
+
+  case 0x80:
+  case 0x82:
+  case 0x89:
+  case 0xC2:
+  case 0xE2: { // NOP $IMM
+    if (!c->instr.addr_fetched) {
+      fetch_imm(c);
+    }
+
+    execute_nop(c);
+    break;
+  }
+
+  case 0x04:
+  case 0x44:
+  case 0x64: { // NOP $ZPG
+    if (!c->instr.addr_fetched) {
+      fetch_zpg(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_nop(c);
+    }
+
+    break;
+  }
+
+  case 0x14:
+  case 0x34:
+  case 0x54:
+  case 0x74:
+  case 0xD4:
+  case 0xF4: { // NOP $ZPX
+    if (!c->instr.addr_fetched) {
+      fetch_zpx(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_nop(c);
+    }
+
+    break;
+  }
+
+  case 0x0C: { // NOP $ABS
+    if (!c->instr.addr_fetched) {
+      fetch_abs(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_nop(c);
+    }
+
+    break;
+  }
+
+  case 0x1C:
+  case 0x3C:
+  case 0x5C:
+  case 0x7C:
+  case 0xDC:
+  case 0xFC: { // NOP $ABX
+    if (!c->instr.addr_fetched) {
+      fetch_abx(c, false);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_nop(c);
+    }
+
+    break;
+  }
+
     /** TODO:
-     *  Needs implementation for 204 OPCodes.
+     *  Needs implementation for 176 OPCodes.
      *  To implement all other
      *  opcodes.
      */
