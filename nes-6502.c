@@ -502,6 +502,10 @@ static void execute_nop(CPU_6502 *c) {
   }
 }
 
+/** ::TODO::
+ * IMPLEMENTED: 80
+ * REMAINING:   176
+ */
 static void do_opcode_cycle(CPU_6502 *c) {
   switch (c->instr.opcode) {
   case 0x02:
@@ -1083,12 +1087,6 @@ static void do_opcode_cycle(CPU_6502 *c) {
 
     break;
   }
-
-    /** TODO:
-     *  Needs implementation for 176 OPCodes.
-     *  To implement all other
-     *  opcodes.
-     */
 
   default: {
     switch (c->instr.step) {
