@@ -1,12 +1,13 @@
 #include "nes-6502.h"
 
-static inline void set_lsb(uword *w, ubyte v) {
-  *w = (*w & 0xFF00) | (v & 0xFF);
-}
+static inline void set_lsb(uword *w, ubyte v) { *w = (*w & 0xFF00) | v; }
 
 static inline void set_msb(uword *w, ubyte v) { *w = (v << 8) | (*w & 0xFF); }
+
 static inline ubyte get_lsb(const uword *w) { return *w & 0xFF; }
+
 static inline ubyte get_msb(const uword *w) { return *w >> 8; }
+
 static inline void schedule_read(CPU_6502 *c, uword addr) {
   c->bus.addr = (uword)addr;
   c->bus.write = false;
@@ -19,6 +20,7 @@ static inline void schedule_write(CPU_6502 *c, uword addr, ubyte val) {
 }
 
 static inline ubyte read_bus(const CPU_6502 *c) { return c->bus.val; }
+
 static inline void schedule_pull(CPU_6502 *c) {
   schedule_read(c, 0x100 | (++c->reg.SP));
 }
@@ -28,11 +30,17 @@ static inline void schedule_push(CPU_6502 *c, ubyte val) {
 }
 
 static inline ubyte get_pcl(const CPU_6502 *c) { return get_lsb(&c->reg.PC); }
+
 static inline ubyte get_pch(const CPU_6502 *c) { return get_msb(&c->reg.PC); }
+
 static inline void set_pcl(CPU_6502 *c, ubyte val) { set_lsb(&c->reg.PC, val); }
+
 static inline void set_pch(CPU_6502 *c, ubyte val) { set_msb(&c->reg.PC, val); }
+
 static inline void set_flag(CPU_6502 *c, ubyte f) { c->reg.P |= f; }
+
 static inline void clear_flag(CPU_6502 *c, ubyte f) { c->reg.P &= ~f; }
+
 static inline bool get_flag(const CPU_6502 *c, ubyte f) {
   return (c->reg.P & f) != 0;
 }
@@ -242,7 +250,7 @@ static void fetch_zpg(CPU_6502 *c) {
   }
 }
 
-static void fetch_zp_n(CPU_6502 *c, ubyte *v) {
+static void __fetch_zp_n(CPU_6502 *c, ubyte *v) {
   switch (c->instr.step) {
   case 0: {
     schedule_read(c, c->reg.PC);
@@ -265,8 +273,10 @@ static void fetch_zp_n(CPU_6502 *c, ubyte *v) {
   }
 }
 
-static inline void fetch_zpx(CPU_6502 *c) { fetch_zp_n(c, &c->reg.X); }
-static inline void fetch_zpy(CPU_6502 *c) { fetch_zp_n(c, &c->reg.Y); }
+static inline void fetch_zpx(CPU_6502 *c) { __fetch_zp_n(c, &c->reg.X); }
+
+static inline void fetch_zpy(CPU_6502 *c) { __fetch_zp_n(c, &c->reg.Y); }
+
 static void fetch_abs(CPU_6502 *c) {
   switch (c->instr.step) {
   case 0: {
@@ -291,7 +301,7 @@ static void fetch_abs(CPU_6502 *c) {
   }
 }
 
-static void fetch_ab_n(CPU_6502 *c, ubyte *v, bool force_page_cross) {
+static void __fetch_ab_n(CPU_6502 *c, ubyte *v, bool force_page_cross) {
   switch (c->instr.step) {
   case 0: {
     schedule_read(c, c->reg.PC);
@@ -330,11 +340,11 @@ static void fetch_ab_n(CPU_6502 *c, ubyte *v, bool force_page_cross) {
 }
 
 static inline void fetch_abx(CPU_6502 *c, bool force_page_cross) {
-  fetch_ab_n(c, &c->reg.X, force_page_cross);
+  __fetch_ab_n(c, &c->reg.X, force_page_cross);
 }
 
 static inline void fetch_aby(CPU_6502 *c, bool force_page_cross) {
-  fetch_ab_n(c, &c->reg.Y, force_page_cross);
+  __fetch_ab_n(c, &c->reg.Y, force_page_cross);
 }
 
 static void fetch_idx(CPU_6502 *c) {
@@ -444,6 +454,50 @@ static void execute_kil_jam(CPU_6502 *c) {
   }
   }
 }
+
+static void __execute_ld_n(CPU_6502 *c, ubyte *b) {
+  switch (c->instr.step) {
+  case 0: {
+    schedule_read(c, c->reg.PC);
+    break;
+  }
+
+  case 1: {
+    *b = read_bus(c);
+    set_flag_zn(c, *b);
+
+    c->instr.step = -1;
+    schedule_read(c, c->reg.PC);
+    break;
+  }
+  }
+}
+
+static inline void execute_lda(CPU_6502 *c) { __execute_ld_n(c, &c->reg.A); }
+
+static inline void execute_ldx(CPU_6502 *c) { __execute_ld_n(c, &c->reg.X); }
+
+static inline void execute_ldy(CPU_6502 *c) { __execute_ld_n(c, &c->reg.Y); }
+
+static void __execute_st_n(CPU_6502 *c, ubyte *b) {
+  switch (c->instr.step) {
+  case 0: {
+    schedule_write(c, c->reg.PC, *b);
+    break;
+  }
+
+  case 1: {
+    schedule_read(c, c->reg.PC);
+    break;
+  }
+  }
+}
+
+static inline void execute_sta(CPU_6502 *c) { __execute_st_n(c, &c->reg.A); }
+
+static inline void execute_stx(CPU_6502 *c) { __execute_st_n(c, &c->reg.X); }
+
+static inline void execute_sty(CPU_6502 *c) { __execute_st_n(c, &c->reg.Y); }
 
 static void do_opcode_cycle(CPU_6502 *c) {
   switch (c->instr.opcode) {
@@ -567,8 +621,380 @@ static void do_opcode_cycle(CPU_6502 *c) {
     break;
   }
 
+  case 0xA1: { // LDA $IDX
+    if (!c->instr.addr_fetched) {
+      fetch_idx(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_lda(c);
+    }
+
+    break;
+  }
+
+  case 0xA5: { // LDA $ZPG
+    if (!c->instr.addr_fetched) {
+      fetch_zpg(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_lda(c);
+    }
+
+    break;
+  }
+
+  case 0xA9: { // LDA $IMM
+    if (!c->instr.addr_fetched) {
+      fetch_imm(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_lda(c);
+    }
+
+    break;
+  }
+
+  case 0xAD: { // LDA $ABS
+    if (!c->instr.addr_fetched) {
+      fetch_abs(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_lda(c);
+    }
+
+    break;
+  }
+
+  case 0xB1: { // LDA $IDY
+    if (!c->instr.addr_fetched) {
+      fetch_idy(c, false);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_lda(c);
+    }
+
+    break;
+  }
+
+  case 0xB5: { // LDA $ZPX
+    if (!c->instr.addr_fetched) {
+      fetch_zpx(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_lda(c);
+    }
+
+    break;
+  }
+
+  case 0xB9: { // LDA $ABY
+    if (!c->instr.addr_fetched) {
+      fetch_aby(c, false);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_lda(c);
+    }
+
+    break;
+  }
+
+  case 0xBD: { // LDA $ABX
+    if (!c->instr.addr_fetched) {
+      fetch_abx(c, false);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_lda(c);
+    }
+
+    break;
+  }
+
+  case 0xA2: { // LDX $IMM
+    if (!c->instr.addr_fetched) {
+      fetch_imm(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_ldx(c);
+    }
+
+    break;
+  }
+
+  case 0xA6: { // LDX $ZPG
+    if (!c->instr.addr_fetched) {
+      fetch_zpg(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_ldx(c);
+    }
+
+    break;
+  }
+
+  case 0xAE: { // LDX $ABS
+    if (!c->instr.addr_fetched) {
+      fetch_abs(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_ldx(c);
+    }
+
+    break;
+  }
+
+  case 0xB6: { // LDX $ZPY
+    if (!c->instr.addr_fetched) {
+      fetch_zpy(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_ldx(c);
+    }
+
+    break;
+  }
+
+  case 0xBE: { // LDX $ABY
+    if (!c->instr.addr_fetched) {
+      fetch_aby(c, false);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_ldx(c);
+    }
+
+    break;
+  }
+
+  case 0xA0: { // LDY $IMM
+    if (!c->instr.addr_fetched) {
+      fetch_imm(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_ldy(c);
+    }
+
+    break;
+  }
+
+  case 0xA4: { // LDY $ZPG
+    if (!c->instr.addr_fetched) {
+      fetch_zpg(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_ldy(c);
+    }
+
+    break;
+  }
+
+  case 0xAC: { // LDY $ABS
+    if (!c->instr.addr_fetched) {
+      fetch_abs(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_ldy(c);
+    }
+
+    break;
+  }
+
+  case 0xB4: { // LDY $ZPX
+    if (!c->instr.addr_fetched) {
+      fetch_zpx(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_ldy(c);
+    }
+
+    break;
+  }
+
+  case 0xBC: { // LDY $ABX
+    if (!c->instr.addr_fetched) {
+      fetch_abx(c, false);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_ldy(c);
+    }
+
+    break;
+  }
+
+  case 0x81: { // STA $IDX
+    if (!c->instr.addr_fetched) {
+      fetch_idx(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_sta(c);
+    }
+
+    break;
+  }
+
+  case 0x85: { // STA $ZPG
+    if (!c->instr.addr_fetched) {
+      fetch_zpg(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_sta(c);
+    }
+
+    break;
+  }
+
+  case 0x8D: { // STA $ABS
+    if (!c->instr.addr_fetched) {
+      fetch_abs(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_sta(c);
+    }
+
+    break;
+  }
+
+  case 0x91: { // STA $IDY
+    if (!c->instr.addr_fetched) {
+      fetch_idy(c, true);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_sta(c);
+    }
+
+    break;
+  }
+
+  case 0x95: { // STA $ZPX
+    if (!c->instr.addr_fetched) {
+      fetch_zpx(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_sta(c);
+    }
+
+    break;
+  }
+
+  case 0x99: { // STA $ABY
+    if (!c->instr.addr_fetched) {
+      fetch_aby(c, true);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_sta(c);
+    }
+
+    break;
+  }
+
+  case 0x9D: { // STA $ABX
+    if (!c->instr.addr_fetched) {
+      fetch_abx(c, true);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_sta(c);
+    }
+
+    break;
+  }
+
+  case 0x86: { // STX $ZPG
+    if (!c->instr.addr_fetched) {
+      fetch_zpg(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_stx(c);
+    }
+
+    break;
+  }
+
+  case 0x8E: { // STX $ABS
+    if (!c->instr.addr_fetched) {
+      fetch_abs(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_stx(c);
+    }
+
+    break;
+  }
+
+  case 0x96: { // STX $ZPY
+    if (!c->instr.addr_fetched) {
+      fetch_zpy(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_stx(c);
+    }
+
+    break;
+  }
+
+  case 0x84: { // STY $ZPG
+    if (!c->instr.addr_fetched) {
+      fetch_zpg(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_sty(c);
+    }
+
+    break;
+  }
+
+  case 0x8C: { // STY $ABS
+    if (!c->instr.addr_fetched) {
+      fetch_abs(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_sty(c);
+    }
+
+    break;
+  }
+
+  case 0x94: { // STY $ZPX
+    if (!c->instr.addr_fetched) {
+      fetch_zpx(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_sty(c);
+    }
+
+    break;
+  }
+
     /** TODO:
-     *  Needs implementation.
+     *  Needs implementation for 204 OPCodes.
      *  To implement all other
      *  opcodes.
      */
