@@ -142,9 +142,14 @@ int main(int argc, char **argv) {
   Memory mem = {0};
 
   if (reset_memory(&mem, filename)) {
+    mem.cpu.reg.P |= flag_u;
+
     while (true) {
       clock_cpu_6502(&mem.cpu);
-      read_cpu(&mem);
+      if (!mem.cpu.bus.write) {
+        read_cpu(&mem);
+      }
+
       log_cpu(&mem.cpu);
 
       if (step) {
