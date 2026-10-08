@@ -36,7 +36,7 @@ void read_cpu(Memory *m) {
   }
 }
 
-void log_cpu(const CPU_6502 *c) {
+void log_cpu_visual(const CPU_6502 *c) {
   const char *g = "\033[32m";
   const char *r = "\033[31m";
   const char *x = "\033[0m";
@@ -59,6 +59,26 @@ void log_cpu(const CPU_6502 *c) {
          c->bus.write ? "WRITE" : "READ", x, c->oamdma.active ? g : r, x,
          c->oamdma.addr, c->bus.val, c->oamdma.step & 1 ? r : g,
          c->oamdma.step & 1 ? "READ" : "WRITE", x);
+}
+
+void log_cpu_hard(const CPU_6502 *c) {
+  printf("STEP: %lu %s\n  $%04X A:%02X X:%02X Y:%02X SP:%02X\n  "
+         "FLAGS: N=%u V=%u U=%u B=%u D=%u I=%u Z=%u C=%u\n  "
+         "RESET: PENDING=%u STEP=%u\n  "
+         "IRQ=%u NMI=%u BRK=%u STEP=%u\n  "
+         "OPCODE: %02X ADDR=%04X FETCHED=%u STEP=%u\n  "
+         "BUS: ADDR=%04X VAL=%02X WRITE=%u\n  "
+         "OAMDMA: ACTIVE=%u ADDR=%04X VAL=%02X STEP=%u\n\n",
+         c->steps, c->jammed ? "JAMMED" : "RUNNING", c->reg.PC, c->reg.A,
+         c->reg.X, c->reg.Y, c->reg.SP, !!(c->reg.P & flag_n),
+         !!(c->reg.P & flag_v), !!(c->reg.P & flag_u), !!(c->reg.P & flag_b),
+         !!(c->reg.P & flag_d), !!(c->reg.P & flag_i), !!(c->reg.P & flag_z),
+         !!(c->reg.P & flag_c), c->reset.pending, c->reset.step,
+         c->interrupt.irqLine, c->interrupt.nmiPending,
+         c->interrupt.breakStarted, c->interrupt.step, c->instr.opcode,
+         c->instr.addr, c->instr.addr_fetched, c->instr.step, c->bus.addr,
+         c->bus.val, c->bus.write, c->oamdma.active, c->oamdma.addr, c->bus.val,
+         c->oamdma.step);
 }
 
 bool reset_memory(Memory *m, char *filename) {
@@ -121,24 +141,28 @@ bool reset_memory(Memory *m, char *filename) {
 }
 
 int main(int argc, char **argv) {
-  if (argc < 2 || argc > 3) {
-    printf("Usage: %s <nes-file> [--step]\n", argv[0]);
+  if (argc < 2 || argc > 4) {
+    printf("Usage: %s <nes-file> [--step] [--visual]\n", argv[0]);
     printf("Emulate CPU with mapper 0 like address mapping.\n");
     return 0;
   }
 
   char *filename = argv[1];
   bool step = false;
+  bool visual = false;
 
-  if (argc == 3) {
-    if (strcmp(argv[2], "--step") == 0) {
+  for (int i = 2; i < argc; i++) {
+    if (strcmp(argv[i], "--step") == 0) {
       step = true;
+    } else if (strcmp(argv[i], "--visual") == 0) {
+      visual = true;
     } else {
-      printf("Invalid option %s\n", argv[2]);
+      printf("Invalid option %s\n", argv[i]);
       return 1;
     }
   }
 
+  void (*log_cpu)(const CPU_6502 *) = visual ? log_cpu_visual : log_cpu_hard;
   Memory mem = {0};
 
   if (reset_memory(&mem, filename)) {
