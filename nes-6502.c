@@ -1,3 +1,117 @@
+// clang-format off
+/**
+ * OFFICIAL OPCODES
+ *
+ * ADC: 0x69(imm) 0x65(zpg) 0x75(zpx) 0x6D(abs) 0x7D(abx) 0x79(aby) 0x61(idx) 0x71(idy)
+ * AND: 0x29(imm) 0x25(zpg) 0x35(zpx) 0x2D(abs) 0x3D(abx) 0x39(aby) 0x21(idx) 0x31(idy)
+ * ASL: 0x0A(acc) 0x06(zpg) 0x16(zpx) 0x0E(abs) 0x1E(abx)
+ * BCC: 0x90(rel)                                                                       ::IMPLEMENTED::
+ * BCS: 0xB0(rel)                                                                       ::IMPLEMENTED::
+ * BEQ: 0xF0(rel)                                                                       ::IMPLEMENTED::
+ * BIT: 0x24(zpg) 0x2C(abs)
+ * BMI: 0x30(rel)                                                                       ::IMPLEMENTED::
+ * BNE: 0xD0(rel)                                                                       ::IMPLEMENTED::
+ * BPL: 0x10(rel)                                                                       ::IMPLEMENTED::
+ * BRK: 0x00(imp)
+ * BVC: 0x50(rel)                                                                       ::IMPLEMENTED::
+ * BVS: 0x70(rel)                                                                       ::IMPLEMENTED::
+ * CLC: 0x18(imp)
+ * CLD: 0xD8(imp)
+ * CLI: 0x58(imp)
+ * CLV: 0xB8(imp)
+ * CMP: 0xC9(imm) 0xC5(zpg) 0xD5(zpx) 0xCD(abs) 0xDD(abx) 0xD9(aby) 0xC1(idx) 0xD1(idy)
+ * CPX: 0xE0(imm) 0xE4(zpg) 0xEC(abs)
+ * CPY: 0xC0(imm) 0xC4(zpg) 0xCC(abs)
+ * DEC: 0xC6(zpg) 0xD6(zpx) 0xCE(abs) 0xDE(abx)
+ * DEX: 0xCA(imp)
+ * DEY: 0x88(imp)
+ * EOR: 0x49(imm) 0x45(zpg) 0x55(zpx) 0x4D(abs) 0x5D(abx) 0x59(aby) 0x41(idx) 0x51(idy)
+ * INC: 0xE6(zpg) 0xF6(zpx) 0xEE(abs) 0xFE(abx)
+ * INX: 0xE8(imp)
+ * INY: 0xC8(imp)
+ * JMP: 0x4C(abs) 0x6C(ind)                                                             ::IMPLEMENTED::
+ * JSR: 0x20(abs)                                                                       ::IMPLEMENTED::
+ * LDA: 0xA9(imm) 0xA5(zpg) 0xB5(zpx) 0xAD(abs) 0xBD(abx) 0xB9(aby) 0xA1(idx) 0xB1(idy) ::IMPLEMENTED::
+ * LDX: 0xA2(imm) 0xA6(zpg) 0xB6(zpy) 0xAE(abs) 0xBE(aby)                               ::IMPLEMENTED::
+ * LDY: 0xA0(imm) 0xA4(zpg) 0xB4(zpx) 0xAC(abs) 0xBC(abx)                               ::IMPLEMENTED::
+ * LSR: 0x4A(acc) 0x46(zpg) 0x56(zpx) 0x4E(abs) 0x5E(abx)
+ * NOP: 0xEA(imp)                                                                       ::IMPLEMENTED::
+ * ORA: 0x09(imm) 0x05(zpg) 0x15(zpx) 0x0D(abs) 0x1D(abx) 0x19(aby) 0x01(idx) 0x11(idy) ::IMPLEMENTED::
+ * PHA: 0x48(imp)
+ * PHP: 0x08(imp)
+ * PLA: 0x68(imp)
+ * PLP: 0x28(imp)
+ * ROL: 0x2A(acc) 0x26(zpg) 0x36(zpx) 0x2E(abs) 0x3E(abx)
+ * ROR: 0x6A(acc) 0x66(zpg) 0x76(zpx) 0x6E(abs) 0x7E(abx)
+ * RTI: 0x40(imp)
+ * RTS: 0x60(imp)
+ * SBC: 0xE9(imm) 0xE5(zpg) 0xF5(zpx) 0xED(abs) 0xFD(abx) 0xF9(aby) 0xE1(idx) 0xF1(idy)
+ * SEC: 0x38(imp)
+ * SED: 0xF8(imp)
+ * SEI: 0x78(imp)
+ * STA: 0x85(zpg) 0x95(zpx) 0x8D(abs) 0x9D(abx) 0x99(aby) 0x81(idx) 0x91(idy)           ::IMPLEMENTED::
+ * STX: 0x86(zpg) 0x96(zpy) 0x8E(abs)                                                   ::IMPLEMENTED::
+ * STY: 0x84(zpg) 0x94(zpx) 0x8C(abs)                                                   ::IMPLEMENTED::
+ * TAX: 0xAA(imp)
+ * TAY: 0xA8(imp)
+ * TSX: 0xBA(imp)
+ * TXA: 0x8A(imp)
+ * TXS: 0x9A(imp)
+ * TYA: 0x98(imp)
+ *
+ * UNOFFICIAL OPCODES
+ *
+ * AHX: 0x93(idy) 0x9F(aby)
+ * ALR: 0x4B(imm)
+ * ANC: 0x0B(imm) 0x2B(imm)
+ * ARR: 0x6B(imm)
+ * AXS: 0xCB(imm)
+ * DCP: 0xC3(idx) 0xC7(zpg) 0xCF(abs) 0xD3(idy) 0xD7(zpx) 0xDB(aby) 0xDF(abx)
+ * ISC: 0xE3(idx) 0xE7(zpg) 0xEF(abs) 0xF3(idy) 0xF7(zpx) 0xFB(aby) 0xFF(abx)
+ *
+ * KIL: 0x02(imp) 0x12(imp) 0x22(imp) 0x32(imp) 0x42(imp) 0x52(imp)                     ::IMPLEMENTED::
+ * * *  0x62(imp) 0x72(imp) 0x92(imp) 0xB2(imp) 0xD2(imp) 0xF2(imp)                     ::IMPLEMENTED::
+ *
+ * LAS: 0xBB(aby)
+ * LAX: 0xA3(idx) 0xA7(zpg) 0xAF(abs) 0xB3(idy) 0xB7(zpy) 0xBF(aby)
+ * RLA: 0x23(idx) 0x27(zpg) 0x2F(abs) 0x33(idy) 0x37(zpx) 0x3B(aby) 0x3F(abx)
+ * RRA: 0x63(idx) 0x67(zpg) 0x6F(abs) 0x73(idy) 0x77(zpx) 0x7B(aby) 0x7F(abx)
+ * SAX: 0x83(idx) 0x87(zpg) 0x8F(abs) 0x97(zpy)
+ * SBC: 0xEB(imm)
+ * SHX: 0x9E(aby)
+ * SHY: 0x9C(abx)
+ * SLO: 0x03(idx) 0x07(zpg) 0x0F(abs) 0x13(idy) 0x17(zpx) 0x1B(aby) 0x1F(abx)
+ * SRE: 0x43(idx) 0x47(zpg) 0x4F(abs) 0x53(idy) 0x57(zpx) 0x5B(aby) 0x5F(abx)
+ * TAS: 0x9B(aby)
+ * XAA: 0x8B(imm)
+ *
+ * UNOFFICIAL NOP OPCODES
+ *
+ * NOP: 0x1A(imp) 0x3A(imp) 0x5A(imp) 0x7A(imp) 0xDA(imp) 0xFA(imp)                     ::IMPLEMENTED::
+ * NOP: 0x80(imm) 0x82(imm) 0x89(imm) 0xC2(imm) 0xE2(imm)                               ::IMPLEMENTED::
+ * NOP: 0x04(zpg) 0x44(zpg) 0x64(zpg)                                                   ::IMPLEMENTED::
+ * NOP: 0x14(zpx) 0x34(zpx) 0x54(zpx) 0x74(zpx) 0xD4(zpx) 0xF4(zpx)                     ::IMPLEMENTED::
+ * NOP: 0x0C(abs)                                                                       ::IMPLEMENTED::
+ * NOP: 0x1C(abx) 0x3C(abx) 0x5C(abx) 0x7C(abx) 0xDC(abx) 0xFC(abx)                     ::IMPLEMENTED::
+ *
+ * ADDRESSING MODES
+ *
+ * acc: Accumulator
+ * abs: Absolute
+ * abx: Absolute, indexed by X
+ * aby: Absolute, indexed by Y
+ * imm: Immediate
+ * imp: Implied
+ * ind: Indirect
+ * idx: Indexed-indirect
+ * idy: Indirect-indexed
+ * rel: Relative
+ * zpg: Zero page
+ * zpx: Zero page, indexed by X
+ * zpy: Zero page, indexed by Y
+ */
+// clang-format on
+
 #include "nes-6502.h"
 
 static inline void set_lsb(uword *w, ubyte v) { *w = (*w & 0xFF00) | v; }
