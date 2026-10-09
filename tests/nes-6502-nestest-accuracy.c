@@ -154,7 +154,7 @@ static void compare_files(const char *real_path) {
   puts("======================================================================="
        "=========");
   printf("REAL     : %s\n", real_path);
-  printf("EXPECTED : ../assets/log (embedded)\n");
+  printf("EXPECTED : ../assets/nestest-real.log (embedded)\n");
   puts("======================================================================="
        "=========");
 

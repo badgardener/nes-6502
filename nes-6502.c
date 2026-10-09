@@ -2,8 +2,8 @@
 
 static inline void set_lsb(uword *w, ubyte v) { *w = (*w & 0xFF00) | v; }
 static inline void set_msb(uword *w, ubyte v) { *w = (v << 8) | (*w & 0xFF); }
-static inline ubyte get_lsb(const uword *w) { return *w & 0xFF; }
-static inline ubyte get_msb(const uword *w) { return *w >> 8; }
+static inline ubyte get_lsb(const uword w) { return w & 0xFF; }
+static inline ubyte get_msb(const uword w) { return w >> 8; }
 
 static inline void schedule_read(CPU_6502 *c, uword addr) {
   c->bus.addr = (uword)addr;
@@ -26,8 +26,8 @@ static inline void schedule_push(CPU_6502 *c, ubyte val) {
   schedule_write(c, 0x100 | (c->reg.SP--), val);
 }
 
-static inline ubyte get_pcl(const CPU_6502 *c) { return get_lsb(&c->reg.PC); }
-static inline ubyte get_pch(const CPU_6502 *c) { return get_msb(&c->reg.PC); }
+static inline ubyte get_pcl(const CPU_6502 *c) { return get_lsb(c->reg.PC); }
+static inline ubyte get_pch(const CPU_6502 *c) { return get_msb(c->reg.PC); }
 static inline void set_pcl(CPU_6502 *c, ubyte val) { set_lsb(&c->reg.PC, val); }
 static inline void set_pch(CPU_6502 *c, ubyte val) { set_msb(&c->reg.PC, val); }
 
@@ -295,14 +295,13 @@ static void __fetch_ab_n(CPU_6502 *c, ubyte *v, bool force_page_cross) {
     c->reg.PC++;
     c->instr.addr = c->instr.ptr + *v;
 
-    if (!force_page_cross &&
-        get_msb(&c->instr.addr) == get_msb(&c->instr.ptr)) {
+    if (!force_page_cross && get_msb(c->instr.addr) == get_msb(c->instr.ptr)) {
       c->instr.addr_fetched = true;
       c->instr.step = 0;
       return;
     }
 
-    schedule_read(c, (c->instr.ptr & 0xFF00) | get_lsb(&c->instr.addr));
+    schedule_read(c, (c->instr.ptr & 0xFF00) | get_lsb(c->instr.addr));
     break;
   }
 
@@ -379,13 +378,13 @@ static void fetch_idy(CPU_6502 *c, bool force_page_cross) {
     uword base = c->instr.addr;
     c->instr.addr += c->reg.Y;
 
-    if (!force_page_cross && get_msb(&base) == get_msb(&c->instr.addr)) {
+    if (!force_page_cross && get_msb(base) == get_msb(c->instr.addr)) {
       c->instr.addr_fetched = true;
       c->instr.step = 0;
       return;
     }
 
-    schedule_read(c, (base & 0xFF00) | get_lsb(&c->instr.addr));
+    schedule_read(c, (base & 0xFF00) | get_lsb(c->instr.addr));
     break;
   }
 
@@ -536,12 +535,12 @@ static void handle_branch(CPU_6502 *c) {
     uword base = c->reg.PC;
     c->reg.PC = c->instr.addr;
 
-    if (get_msb(&base) == get_msb(&c->reg.PC)) {
+    if (get_msb(base) == get_msb(c->reg.PC)) {
       end_opcode_execution(c);
       return;
     }
 
-    set_msb(&c->instr.addr, get_msb(&base));
+    set_msb(&c->instr.addr, get_msb(base));
     schedule_read(c, c->instr.addr);
     break;
   }
@@ -1176,7 +1175,7 @@ static void do_opcode_cycle(CPU_6502 *c) {
 
     case 3: {
       set_pcl(c, read_bus(c));
-      set_lsb(&c->instr.ptr, get_lsb(&c->instr.ptr) + 1);
+      set_lsb(&c->instr.ptr, get_lsb(c->instr.ptr) + 1);
       schedule_read(c, c->instr.ptr);
       break;
     }
