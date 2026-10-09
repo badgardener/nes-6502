@@ -31,24 +31,17 @@ static inline ubyte get_pch(const CPU_6502 *c) { return get_msb(&c->reg.PC); }
 static inline void set_pcl(CPU_6502 *c, ubyte val) { set_lsb(&c->reg.PC, val); }
 static inline void set_pch(CPU_6502 *c, ubyte val) { set_msb(&c->reg.PC, val); }
 
-static inline void set_flag(CPU_6502 *c, ubyte f) { c->reg.P |= f; }
-static inline void clear_flag(CPU_6502 *c, ubyte f) { c->reg.P &= ~f; }
+static inline void set_flag(CPU_6502 *c, ubyte f, bool w) {
+  c->reg.P = w ? c->reg.P | f : c->reg.P & ~f;
+}
+
 static inline bool get_flag(const CPU_6502 *c, ubyte f) {
   return (c->reg.P & f) != 0;
 }
 
 static inline void set_flag_zn(CPU_6502 *c, ubyte v) {
-  if (v == 0) {
-    set_flag(c, flag_z);
-  } else {
-    clear_flag(c, flag_z);
-  }
-
-  if (v & 0x80) {
-    set_flag(c, flag_n);
-  } else {
-    clear_flag(c, flag_n);
-  }
+  set_flag(c, flag_z, v == 0);
+  set_flag(c, flag_n, v & 0x80);
 }
 
 static inline bool interrupt(const CPU_6502 *c) {
@@ -89,8 +82,8 @@ static void do_reset_cycle(CPU_6502 *c) {
   }
 
   case 2: {
-    set_flag(c, flag_u);
-    set_flag(c, flag_i);
+    set_flag(c, flag_u, true);
+    set_flag(c, flag_i, true);
 
     schedule_read(c, 0x100 | c->reg.SP);
     break;
@@ -169,7 +162,7 @@ static void do_interrupt_cycle(CPU_6502 *c) {
 
   case 5: {
     c->interrupt.breakStarted = false;
-    set_flag(c, flag_i);
+    set_flag(c, flag_i, true);
 
     if (c->interrupt.nmiPending) {
       c->interrupt.nmiPending = false;
@@ -312,7 +305,7 @@ static void __fetch_ab_n(CPU_6502 *c, ubyte *v, bool force_page_cross) {
     c->instr.addr = c->instr.ptr + *v;
 
     if (!force_page_cross &&
-        (c->instr.addr & 0xFF00) == (c->instr.ptr & 0xFF00)) {
+        get_msb(&c->instr.addr) == get_msb(&c->instr.ptr)) {
       c->instr.addr_fetched = true;
       c->instr.step = 0;
       return;
@@ -395,7 +388,7 @@ static void fetch_idy(CPU_6502 *c, bool force_page_cross) {
     uword base = c->instr.addr;
     c->instr.addr += c->reg.Y;
 
-    if (!force_page_cross && (base & 0xFF00) == (c->instr.addr & 0xFF00)) {
+    if (!force_page_cross && get_msb(&base) == get_msb(&c->instr.addr)) {
       c->instr.addr_fetched = true;
       c->instr.step = 0;
       return;
@@ -413,6 +406,11 @@ static void fetch_idy(CPU_6502 *c, bool force_page_cross) {
   }
 }
 
+static inline void end_opcode_execution(CPU_6502 *c) {
+  c->instr.step = -1;
+  schedule_read(c, c->reg.PC);
+}
+
 static void execute_ora(CPU_6502 *c) {
   switch (c->instr.step) {
   case 0: {
@@ -424,8 +422,7 @@ static void execute_ora(CPU_6502 *c) {
     c->reg.A |= read_bus(c);
     set_flag_zn(c, c->reg.A);
 
-    c->instr.step = -1;
-    schedule_read(c, c->reg.PC);
+    end_opcode_execution(c);
     break;
   }
   }
@@ -449,7 +446,7 @@ static void execute_kil_jam(CPU_6502 *c) {
 static void __execute_ld_n(CPU_6502 *c, ubyte *b) {
   switch (c->instr.step) {
   case 0: {
-    schedule_read(c, c->reg.PC);
+    schedule_read(c, c->instr.addr);
     break;
   }
 
@@ -457,8 +454,7 @@ static void __execute_ld_n(CPU_6502 *c, ubyte *b) {
     *b = read_bus(c);
     set_flag_zn(c, *b);
 
-    c->instr.step = -1;
-    schedule_read(c, c->reg.PC);
+    end_opcode_execution(c);
     break;
   }
   }
@@ -471,13 +467,12 @@ static inline void execute_ldy(CPU_6502 *c) { __execute_ld_n(c, &c->reg.Y); }
 static void __execute_st_n(CPU_6502 *c, ubyte *b) {
   switch (c->instr.step) {
   case 0: {
-    schedule_write(c, c->reg.PC, *b);
+    schedule_write(c, c->instr.addr, *b);
     break;
   }
 
   case 1: {
-    c->instr.step = -1;
-    schedule_read(c, c->reg.PC);
+    end_opcode_execution(c);
     break;
   }
   }
@@ -495,16 +490,85 @@ static void execute_nop(CPU_6502 *c) {
   }
 
   case 1: {
-    c->instr.step = -1;
-    schedule_read(c, c->reg.PC);
+    end_opcode_execution(c);
     break;
   }
   }
 }
 
+static inline bool is_branch_taken(const CPU_6502 *c) {
+  switch (c->instr.opcode) {
+  case 0x10:
+    return !get_flag(c, flag_n);
+  case 0x30:
+    return get_flag(c, flag_n);
+  case 0x50:
+    return !get_flag(c, flag_v);
+  case 0x70:
+    return get_flag(c, flag_v);
+  case 0x90:
+    return !get_flag(c, flag_c);
+  case 0xB0:
+    return get_flag(c, flag_c);
+  case 0xD0:
+    return !get_flag(c, flag_z);
+  case 0xF0:
+    return get_flag(c, flag_z);
+  }
+
+  return false;
+}
+
+static void handle_branch(CPU_6502 *c) {
+  switch (c->instr.step) {
+  case 0: {
+    schedule_read(c, c->reg.PC);
+    break;
+  }
+
+  case 1: {
+    byte operand = (byte)read_bus(c);
+    c->reg.PC++;
+
+    if (!is_branch_taken(c)) {
+      end_opcode_execution(c);
+      return;
+    }
+
+    c->instr.addr = c->reg.PC + operand;
+    schedule_read(c, c->reg.PC);
+    break;
+  }
+
+  case 2: {
+    uword base = c->reg.PC;
+    c->reg.PC = c->instr.addr;
+
+    if (get_msb(&base) == get_msb(&c->reg.PC)) {
+      end_opcode_execution(c);
+      return;
+    }
+
+    set_msb(&c->instr.addr, get_msb(&base));
+    schedule_read(c, c->instr.addr);
+    break;
+  }
+
+  case 3: {
+    end_opcode_execution(c);
+    break;
+  }
+  }
+}
+
+static void execute_jmp(CPU_6502 *c) {
+  c->reg.PC = c->instr.addr;
+  end_opcode_execution(c);
+}
+
 /** ::TODO::
- * IMPLEMENTED: 80
- * REMAINING:   176
+ * IMPLEMENTED: 95
+ * REMAINING:   161
  */
 static void do_opcode_cycle(CPU_6502 *c) {
   switch (c->instr.opcode) {
@@ -524,11 +588,22 @@ static void do_opcode_cycle(CPU_6502 *c) {
     break;
   }
 
+  case 0x10:   // BPL $REL
+  case 0x30:   // BMI $REL
+  case 0x50:   // BVC $REL
+  case 0x70:   // BVS $REL
+  case 0x90:   // BCC $REL
+  case 0xB0:   // BCS $REL
+  case 0xD0:   // BNE $REL
+  case 0xF0: { // BEQ $REL
+    handle_branch(c);
+    break;
+  }
+
   case 0x00: { // BRK $IMP
     c->interrupt.breakStarted = true;
     c->interrupt.step = 1;
-    c->instr.step = -1;
-    schedule_read(c, c->reg.PC);
+    end_opcode_execution(c);
     break;
   }
 
@@ -1088,7 +1163,19 @@ static void do_opcode_cycle(CPU_6502 *c) {
     break;
   }
 
-  default: {
+  case 0x4C: { // JMP $ABS
+    if (!c->instr.addr_fetched) {
+      fetch_abs(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_jmp(c);
+    }
+
+    break;
+  }
+
+  case 0x6C: { // JMP $IND
     switch (c->instr.step) {
     case 0: {
       schedule_read(c, c->reg.PC);
@@ -1096,12 +1183,168 @@ static void do_opcode_cycle(CPU_6502 *c) {
     }
 
     case 1: {
-      c->instr.step = -1;
+      set_lsb(&c->instr.ptr, read_bus(c));
+      c->reg.PC++;
       schedule_read(c, c->reg.PC);
+      break;
+    }
+
+    case 2: {
+      set_msb(&c->instr.ptr, read_bus(c));
+      schedule_read(c, c->instr.ptr);
+      break;
+    }
+
+    case 3: {
+      set_pcl(c, read_bus(c));
+      set_lsb(&c->instr.ptr, get_lsb(&c->instr.ptr) + 1);
+      schedule_read(c, c->instr.ptr);
+      break;
+    }
+
+    case 4: {
+      set_pch(c, read_bus(c));
+      end_opcode_execution(c);
       break;
     }
     }
 
+    break;
+  }
+
+  case 0x20: { // JSR $ABS/$JSR
+    switch (c->instr.step) {
+    case 0: {
+      schedule_read(c, c->reg.PC);
+      break;
+    }
+
+    case 1: {
+      set_lsb(&c->instr.addr, read_bus(c));
+      c->reg.PC++;
+      schedule_read(c, 0x0100 | c->reg.SP);
+      break;
+    }
+
+    case 2: {
+      read_bus(c);
+      schedule_push(c, get_pch(c));
+      break;
+    }
+
+    case 3: {
+      schedule_push(c, get_pcl(c));
+      break;
+    }
+
+    case 4: {
+      schedule_read(c, c->reg.PC);
+      break;
+    }
+
+    case 5: {
+      set_msb(&c->instr.addr, read_bus(c));
+      c->reg.PC = c->instr.addr;
+      end_opcode_execution(c);
+      break;
+    }
+    }
+
+    break;
+  }
+
+  case 0x0A: { // ASL $ACC
+    switch (c->instr.step) {
+    case 0: {
+      schedule_read(c, c->reg.PC);
+      break;
+    }
+
+    case 1: {
+      ubyte old = c->reg.A;
+      c->reg.A = old << 1;
+
+      set_flag(c, flag_c, old & 0x80);
+      set_flag_zn(c, c->reg.A);
+      end_opcode_execution(c);
+      break;
+    }
+    }
+
+    break;
+  }
+
+  case 0x4A: { // LSR $ACC
+    switch (c->instr.step) {
+    case 0: {
+      schedule_read(c, c->reg.PC);
+      break;
+    }
+
+    case 1: {
+      ubyte old = c->reg.A;
+      c->reg.A = old >> 1;
+
+      set_flag(c, flag_c, old & 1);
+      set_flag_zn(c, c->reg.A);
+      end_opcode_execution(c);
+      break;
+    }
+    }
+
+    break;
+  }
+
+  case 0x2A: { // ROL $ACC
+    switch (c->instr.step) {
+    case 0: {
+      schedule_read(c, c->reg.PC);
+      break;
+    }
+
+    case 1: {
+      ubyte old = c->reg.A;
+      bool carry = get_flag(c, flag_c);
+      c->reg.A = (old << 1) | carry;
+
+      set_flag(c, flag_c, old & 0x80);
+      set_flag_zn(c, c->reg.A);
+      end_opcode_execution(c);
+      break;
+    }
+    }
+
+    break;
+  }
+
+  case 0x6A: { // ROR $ACC
+    switch (c->instr.step) {
+    case 0: {
+      schedule_read(c, c->reg.PC);
+      break;
+    }
+
+    case 1: {
+      ubyte old = c->reg.A;
+      bool carry = get_flag(c, flag_c);
+      c->reg.A = (old >> 1) | (carry << 7);
+
+      set_flag(c, flag_c, old & 1);
+      set_flag_zn(c, c->reg.A);
+      end_opcode_execution(c);
+      break;
+    }
+    }
+
+    break;
+  }
+
+  default: { // NOP-Like $IMM
+    if (!c->instr.addr_fetched) {
+      fetch_imm(c);
+    }
+
+    execute_nop(c);
     break;
   }
   }
