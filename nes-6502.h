@@ -219,6 +219,11 @@ typedef struct CPU_6502 {
      * Opcode currently being executed.
      */
     ubyte opcode;
+
+    /**
+     * OPCode executed, if set.
+     */
+    bool finished;
   } instr;
 
   /**

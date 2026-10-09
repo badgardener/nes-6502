@@ -56,11 +56,6 @@ static inline bool interrupt(const CPU_6502 *c) {
 static void do_reset_cycle(CPU_6502 *c) {
   switch (c->reset.step) {
   case 0: {
-    schedule_read(c, c->reg.PC);
-    break;
-  }
-
-  case 1: {
     c->interrupt.step = 0;
     c->interrupt.irqLine = false;
     c->interrupt.nmiPending = false;
@@ -71,6 +66,7 @@ static void do_reset_cycle(CPU_6502 *c) {
     c->instr.addr_fetched = false;
     c->instr.opcode = 0;
     c->instr.step = 0;
+    c->instr.finished = false;
 
     c->oamdma.active = false;
     c->oamdma.step = 0;
@@ -81,10 +77,16 @@ static void do_reset_cycle(CPU_6502 *c) {
     break;
   }
 
-  case 2: {
+  case 1: {
     set_flag(c, flag_u, true);
     set_flag(c, flag_i, true);
 
+    schedule_read(c, 0x100 | c->reg.SP);
+    break;
+  }
+
+  case 2: {
+    c->reg.SP--;
     schedule_read(c, 0x100 | c->reg.SP);
     break;
   }
@@ -97,23 +99,17 @@ static void do_reset_cycle(CPU_6502 *c) {
 
   case 4: {
     c->reg.SP--;
-    schedule_read(c, 0x100 | c->reg.SP);
-    break;
-  }
-
-  case 5: {
-    c->reg.SP--;
     schedule_read(c, 0xFFFC);
     break;
   }
 
-  case 6: {
+  case 5: {
     set_pcl(c, read_bus(c));
     schedule_read(c, 0xFFFD);
     break;
   }
 
-  case 7: {
+  case 6: {
     set_pch(c, read_bus(c));
     c->reset.step = -1;
     c->reset.pending = false;
@@ -128,11 +124,6 @@ static void do_interrupt_cycle(CPU_6502 *c) {
   switch (c->interrupt.step) {
   case 0: {
     schedule_read(c, c->reg.PC);
-    break;
-  }
-
-  case 1: {
-    schedule_read(c, c->reg.PC);
     if (c->interrupt.breakStarted) {
       c->reg.PC++;
     }
@@ -140,17 +131,17 @@ static void do_interrupt_cycle(CPU_6502 *c) {
     break;
   }
 
-  case 2: {
+  case 1: {
     schedule_push(c, get_pch(c));
     break;
   }
 
-  case 3: {
+  case 2: {
     schedule_push(c, get_pcl(c));
     break;
   }
 
-  case 4: {
+  case 3: {
     if (c->interrupt.breakStarted) {
       schedule_push(c, c->reg.P | flag_b);
     } else {
@@ -160,7 +151,7 @@ static void do_interrupt_cycle(CPU_6502 *c) {
     break;
   }
 
-  case 5: {
+  case 4: {
     c->interrupt.breakStarted = false;
     set_flag(c, flag_i, true);
 
@@ -174,13 +165,13 @@ static void do_interrupt_cycle(CPU_6502 *c) {
     break;
   }
 
-  case 6: {
+  case 5: {
     set_pcl(c, read_bus(c));
     schedule_read(c, c->bus.addr + 1);
     break;
   }
 
-  case 7: {
+  case 6: {
     set_pch(c, read_bus(c));
     c->interrupt.step = -1;
 
@@ -408,6 +399,7 @@ static void fetch_idy(CPU_6502 *c, bool force_page_cross) {
 
 static inline void end_opcode_execution(CPU_6502 *c) {
   c->instr.step = -1;
+  c->instr.finished = true;
   schedule_read(c, c->reg.PC);
 }
 
@@ -602,7 +594,6 @@ static void do_opcode_cycle(CPU_6502 *c) {
 
   case 0x00: { // BRK $IMP
     c->interrupt.breakStarted = true;
-    c->interrupt.step = 1;
     end_opcode_execution(c);
     break;
   }
@@ -636,10 +627,7 @@ static void do_opcode_cycle(CPU_6502 *c) {
       fetch_imm(c);
     }
 
-    if (c->instr.addr_fetched) {
-      execute_ora(c);
-    }
-
+    execute_ora(c);
     break;
   }
 
@@ -732,10 +720,7 @@ static void do_opcode_cycle(CPU_6502 *c) {
       fetch_imm(c);
     }
 
-    if (c->instr.addr_fetched) {
-      execute_lda(c);
-    }
-
+    execute_lda(c);
     break;
   }
 
@@ -804,10 +789,7 @@ static void do_opcode_cycle(CPU_6502 *c) {
       fetch_imm(c);
     }
 
-    if (c->instr.addr_fetched) {
-      execute_ldx(c);
-    }
-
+    execute_ldx(c);
     break;
   }
 
@@ -864,10 +846,7 @@ static void do_opcode_cycle(CPU_6502 *c) {
       fetch_imm(c);
     }
 
-    if (c->instr.addr_fetched) {
-      execute_ldy(c);
-    }
-
+    execute_ldy(c);
     break;
   }
 
@@ -1339,6 +1318,10 @@ static void do_opcode_cycle(CPU_6502 *c) {
     break;
   }
 
+    /** ::TODO::
+     * ::IMPLEMENT:: ::HERE::
+     */
+
   default: { // NOP-Like $IMM
     if (!c->instr.addr_fetched) {
       fetch_imm(c);
@@ -1380,6 +1363,8 @@ void clock_cpu_6502(CPU_6502 *c) {
   }
 
   if (c->instr.step == 0) {
+    c->instr.finished = false;
+    c->instr.addr_fetched = false;
     c->instr.opcode = read_bus(c);
     c->reg.PC++;
   }

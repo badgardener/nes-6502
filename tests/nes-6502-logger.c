@@ -3,7 +3,7 @@
  * - nes-6502.c
  */
 
-#include "nes-6502.h"
+#include "../nes-6502.h"
 
 #include <stdio.h>
 #include <stdlib.h>
