@@ -691,9 +691,34 @@ static void execute_and(CPU_6502 *c) {
   }
 }
 
+static void execute_adc(CPU_6502 *c) {
+  switch (c->instr.step) {
+  case 0: {
+    schedule_read(c, c->instr.addr);
+    break;
+  }
+
+  case 1: {
+    ubyte a = c->reg.A;
+    ubyte value = read_bus(c);
+    ubyte carry = get_flag(c, flag_c);
+    uword sum = (uword)a + value + carry;
+    ubyte result = (ubyte)sum;
+
+    set_flag(c, flag_c, sum > 0xFF);
+    set_flag_zn(c, result);
+    set_flag(c, flag_v, (~(a ^ value) & (a ^ result) & 0x80) != 0);
+
+    c->reg.A = result;
+    end_opcode_execution(c);
+    break;
+  }
+  }
+}
+
 /** ::TODO::
- * IMPLEMENTED: 111 (43.36%)
- * REMAINING:   145
+ * IMPLEMENTED: 129 (50.4%)
+ * REMAINING:   127
  */
 static void do_opcode_cycle(CPU_6502 *c) {
   switch (c->instr.opcode) {
@@ -1734,6 +1759,126 @@ static void do_opcode_cycle(CPU_6502 *c) {
 
     if (c->instr.addr_fetched) {
       execute_and(c);
+    }
+
+    break;
+  }
+
+  case 0x08:
+  case 0x28: { // ANC $IMM
+    if (!c->instr.addr_fetched) {
+      fetch_imm(c);
+    }
+
+    switch (c->instr.step) {
+    case 0: {
+      schedule_read(c, c->instr.addr);
+      break;
+    }
+
+    case 1: {
+      c->reg.A &= read_bus(c);
+      set_flag_zn(c, c->reg.A);
+      set_flag(c, flag_c, c->reg.A & 0x80);
+      end_opcode_execution(c);
+      break;
+    }
+    }
+
+    break;
+  }
+
+  case 0x61: { // ADC $IDX
+    if (!c->instr.addr_fetched) {
+      fetch_idx(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_adc(c);
+    }
+
+    break;
+  }
+
+  case 0x65: { // ADC $ZPG
+    if (!c->instr.addr_fetched) {
+      fetch_zpg(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_adc(c);
+    }
+
+    break;
+  }
+
+  case 0x69: { // ADC $IMM
+    if (!c->instr.addr_fetched) {
+      fetch_imm(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_adc(c);
+    }
+
+    break;
+  }
+
+  case 0x6D: { // ADC $ABS
+    if (!c->instr.addr_fetched) {
+      fetch_abs(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_adc(c);
+    }
+
+    break;
+  }
+
+  case 0x71: { // ADC $IDY
+    if (!c->instr.addr_fetched) {
+      fetch_idy(c, false);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_adc(c);
+    }
+
+    break;
+  }
+
+  case 0x75: { // ADC $ZPX
+    if (!c->instr.addr_fetched) {
+      fetch_zpx(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_adc(c);
+    }
+
+    break;
+  }
+
+  case 0x79: { // ADC $ABY
+    if (!c->instr.addr_fetched) {
+      fetch_aby(c, false);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_adc(c);
+    }
+
+    break;
+  }
+
+  case 0x7D: { // ADC $ABX
+    if (!c->instr.addr_fetched) {
+      fetch_abx(c, false);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_adc(c);
     }
 
     break;
