@@ -128,6 +128,11 @@ static inline void schedule_write(CPU_6502 *c, uword addr, ubyte val) {
   c->bus.addr = (uword)addr;
   c->bus.val = (ubyte)val;
   c->bus.write = true;
+
+  if (c->bus.addr == 0x4014) {
+    c->oamdma.active = true;
+    c->oamdma.step = 0;
+  }
 }
 
 static inline ubyte read_bus(const CPU_6502 *c) { return c->bus.val; }
