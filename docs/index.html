@@ -1,0 +1,3906 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OPCode Implementation Status</title>
+
+    <style>
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #000000;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 8px 12px;
+        background: #000000;
+        border: 1px solid #504945;
+        color: #ebdbb2;
+        font-family: &quot;JetBrains Mono&quot;, monospace;
+        font-size: 12px;
+      "
+    >
+      <span
+        style="
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          white-space: nowrap;
+        "
+      >
+        <span
+          style="
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #285c28;
+            border: 1px solid #504945;
+          "
+        ></span>
+        Verified
+      </span>
+      <span
+        style="
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          white-space: nowrap;
+        "
+      >
+        <span
+          style="
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #282828;
+            border: 1px solid #504945;
+          "
+        ></span>
+        Implemented
+      </span>
+      <span
+        style="
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          white-space: nowrap;
+        "
+      >
+        <span
+          style="
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #5c2828;
+            border: 1px solid #504945;
+          "
+        ></span>
+        Unimplemented
+      </span>
+    </div>
+
+    <table
+      style="
+        border-collapse: collapse;
+        width: 100%;
+        font-family: &quot;JetBrains Mono&quot;, monospace;
+        font-size: 12px;
+        background: #5c2828;
+        color: #ebdbb2;
+      "
+    >
+      <thead>
+        <tr>
+          <th
+            style="
+              padding: 8px 5px;
+              background: #d65d0e;
+              color: #5c2828;
+              font-weight: 700;
+              border: 1px solid #504945;
+            "
+          ></th>
+          <th
+            style="
+              padding: 8px 5px;
+              background: #d65d0e;
+              color: #5c2828;
+              font-weight: 700;
+              border: 1px solid #504945;
+            "
+          >
+            0x00
+          </th>
+          <th
+            style="
+              padding: 8px 5px;
+              background: #d65d0e;
+              color: #5c2828;
+              font-weight: 700;
+              border: 1px solid #504945;
+            "
+          >
+            0x01
+          </th>
+          <th
+            style="
+              padding: 8px 5px;
+              background: #d65d0e;
+              color: #5c2828;
+              font-weight: 700;
+              border: 1px solid #504945;
+            "
+          >
+            0x02
+          </th>
+          <th
+            style="
+              padding: 8px 5px;
+              background: #d65d0e;
+              color: #5c2828;
+              font-weight: 700;
+              border: 1px solid #504945;
+            "
+          >
+            0x03
+          </th>
+          <th
+            style="
+              padding: 8px 5px;
+              background: #d65d0e;
+              color: #5c2828;
+              font-weight: 700;
+              border: 1px solid #504945;
+            "
+          >
+            0x04
+          </th>
+          <th
+            style="
+              padding: 8px 5px;
+              background: #d65d0e;
+              color: #5c2828;
+              font-weight: 700;
+              border: 1px solid #504945;
+            "
+          >
+            0x05
+          </th>
+          <th
+            style="
+              padding: 8px 5px;
+              background: #d65d0e;
+              color: #5c2828;
+              font-weight: 700;
+              border: 1px solid #504945;
+            "
+          >
+            0x06
+          </th>
+          <th
+            style="
+              padding: 8px 5px;
+              background: #d65d0e;
+              color: #5c2828;
+              font-weight: 700;
+              border: 1px solid #504945;
+            "
+          >
+            0x07
+          </th>
+          <th
+            style="
+              padding: 8px 5px;
+              background: #d65d0e;
+              color: #5c2828;
+              font-weight: 700;
+              border: 1px solid #504945;
+            "
+          >
+            0x08
+          </th>
+          <th
+            style="
+              padding: 8px 5px;
+              background: #d65d0e;
+              color: #5c2828;
+              font-weight: 700;
+              border: 1px solid #504945;
+            "
+          >
+            0x09
+          </th>
+          <th
+            style="
+              padding: 8px 5px;
+              background: #d65d0e;
+              color: #5c2828;
+              font-weight: 700;
+              border: 1px solid #504945;
+            "
+          >
+            0x0A
+          </th>
+          <th
+            style="
+              padding: 8px 5px;
+              background: #d65d0e;
+              color: #5c2828;
+              font-weight: 700;
+              border: 1px solid #504945;
+            "
+          >
+            0x0B
+          </th>
+          <th
+            style="
+              padding: 8px 5px;
+              background: #d65d0e;
+              color: #5c2828;
+              font-weight: 700;
+              border: 1px solid #504945;
+            "
+          >
+            0x0C
+          </th>
+          <th
+            style="
+              padding: 8px 5px;
+              background: #d65d0e;
+              color: #5c2828;
+              font-weight: 700;
+              border: 1px solid #504945;
+            "
+          >
+            0x0D
+          </th>
+          <th
+            style="
+              padding: 8px 5px;
+              background: #d65d0e;
+              color: #5c2828;
+              font-weight: 700;
+              border: 1px solid #504945;
+            "
+          >
+            0x0E
+          </th>
+          <th
+            style="
+              padding: 8px 5px;
+              background: #d65d0e;
+              color: #5c2828;
+              font-weight: 700;
+              border: 1px solid #504945;
+            "
+          >
+            0x0F
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th
+            scope="row"
+            style="
+              padding: 8px;
+              background: #3c3836;
+              color: #fe8019;
+              font-weight: 700;
+              border: 1px solid #504945;
+              white-space: nowrap;
+            "
+          >
+            0x00
+          </th>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">BRK</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ORA</span>
+            <span style="color: #8ec07c">INX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">KIL</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SLO</span>
+            <span style="color: #8ec07c">INX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ORA</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ASL</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SLO</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">PHP</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ORA</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ASL</span>
+            <span style="color: #8ec07c">ACC</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ANC</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ORA</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ASL</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SLO</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+        </tr>
+        <tr>
+          <th
+            scope="row"
+            style="
+              padding: 8px;
+              background: #3c3836;
+              color: #fe8019;
+              font-weight: 700;
+              border: 1px solid #504945;
+              white-space: nowrap;
+            "
+          >
+            0x10
+          </th>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">BPL</span>
+            <span style="color: #8ec07c">REL</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ORA</span>
+            <span style="color: #8ec07c">INY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">KIL</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SLO</span>
+            <span style="color: #8ec07c">INY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ORA</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ASL</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SLO</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">CLC</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ORA</span>
+            <span style="color: #8ec07c">ABY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SLO</span>
+            <span style="color: #8ec07c">ABY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ORA</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ASL</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SLO</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+        </tr>
+        <tr>
+          <th
+            scope="row"
+            style="
+              padding: 8px;
+              background: #3c3836;
+              color: #fe8019;
+              font-weight: 700;
+              border: 1px solid #504945;
+              white-space: nowrap;
+            "
+          >
+            0x20
+          </th>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">JSR</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">AND</span>
+            <span style="color: #8ec07c">INX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">KIL</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">RLA</span>
+            <span style="color: #8ec07c">INX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">BIT</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">AND</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ROL</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">RLA</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">PLP</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">AND</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ROL</span>
+            <span style="color: #8ec07c">ACC</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ANC</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">BIT</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">AND</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ROL</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">RLA</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+        </tr>
+        <tr>
+          <th
+            scope="row"
+            style="
+              padding: 8px;
+              background: #3c3836;
+              color: #fe8019;
+              font-weight: 700;
+              border: 1px solid #504945;
+              white-space: nowrap;
+            "
+          >
+            0x30
+          </th>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">BMI</span>
+            <span style="color: #8ec07c">REL</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">AND</span>
+            <span style="color: #8ec07c">INY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">KIL</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">RLA</span>
+            <span style="color: #8ec07c">INY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">AND</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ROL</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">RLA</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SEC</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">AND</span>
+            <span style="color: #8ec07c">ABY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">RLA</span>
+            <span style="color: #8ec07c">ABY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">AND</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ROL</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">RLA</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+        </tr>
+        <tr>
+          <th
+            scope="row"
+            style="
+              padding: 8px;
+              background: #3c3836;
+              color: #fe8019;
+              font-weight: 700;
+              border: 1px solid #504945;
+              white-space: nowrap;
+            "
+          >
+            0x40
+          </th>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">RTI</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">EOR</span>
+            <span style="color: #8ec07c">INX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">KIL</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SRE</span>
+            <span style="color: #8ec07c">INX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">EOR</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LSR</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SRE</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">PHA</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">EOR</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LSR</span>
+            <span style="color: #8ec07c">ACC</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ALR</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">JMP</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">EOR</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LSR</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SRE</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+        </tr>
+        <tr>
+          <th
+            scope="row"
+            style="
+              padding: 8px;
+              background: #3c3836;
+              color: #fe8019;
+              font-weight: 700;
+              border: 1px solid #504945;
+              white-space: nowrap;
+            "
+          >
+            0x50
+          </th>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">BVC</span>
+            <span style="color: #8ec07c">REL</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">EOR</span>
+            <span style="color: #8ec07c">INY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">KIL</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SRE</span>
+            <span style="color: #8ec07c">INY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">EOR</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LSR</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SRE</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">CLI</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">EOR</span>
+            <span style="color: #8ec07c">ABY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SRE</span>
+            <span style="color: #8ec07c">ABY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">EOR</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LSR</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SRE</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+        </tr>
+        <tr>
+          <th
+            scope="row"
+            style="
+              padding: 8px;
+              background: #3c3836;
+              color: #fe8019;
+              font-weight: 700;
+              border: 1px solid #504945;
+              white-space: nowrap;
+            "
+          >
+            0x60
+          </th>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">RTS</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ADC</span>
+            <span style="color: #8ec07c">INX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">KIL</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">RRA</span>
+            <span style="color: #8ec07c">INX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ADC</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ROR</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">RRA</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">PLA</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ADC</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ROR</span>
+            <span style="color: #8ec07c">ACC</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ARR</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">JMP</span>
+            <span style="color: #8ec07c">IND</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ADC</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ROR</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">RRA</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+        </tr>
+        <tr>
+          <th
+            scope="row"
+            style="
+              padding: 8px;
+              background: #3c3836;
+              color: #fe8019;
+              font-weight: 700;
+              border: 1px solid #504945;
+              white-space: nowrap;
+            "
+          >
+            0x70
+          </th>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">BVS</span>
+            <span style="color: #8ec07c">REL</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ADC</span>
+            <span style="color: #8ec07c">INY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">KIL</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">RRA</span>
+            <span style="color: #8ec07c">INY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ADC</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ROR</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">RRA</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SEI</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ADC</span>
+            <span style="color: #8ec07c">ABY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">RRA</span>
+            <span style="color: #8ec07c">ABY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ADC</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ROR</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">RRA</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+        </tr>
+        <tr>
+          <th
+            scope="row"
+            style="
+              padding: 8px;
+              background: #3c3836;
+              color: #fe8019;
+              font-weight: 700;
+              border: 1px solid #504945;
+              white-space: nowrap;
+            "
+          >
+            0x80
+          </th>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">STA</span>
+            <span style="color: #8ec07c">INX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SAX</span>
+            <span style="color: #8ec07c">INX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">STY</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">STA</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">STX</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SAX</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">DEY</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">TXA</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">XAA</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">STY</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">STA</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">STX</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SAX</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+        </tr>
+        <tr>
+          <th
+            scope="row"
+            style="
+              padding: 8px;
+              background: #3c3836;
+              color: #fe8019;
+              font-weight: 700;
+              border: 1px solid #504945;
+              white-space: nowrap;
+            "
+          >
+            0x90
+          </th>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">BCC</span>
+            <span style="color: #8ec07c">REL</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">STA</span>
+            <span style="color: #8ec07c">INY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">KIL</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">AHX</span>
+            <span style="color: #8ec07c">INY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">STY</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">STA</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">STX</span>
+            <span style="color: #8ec07c">ZPY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SAX</span>
+            <span style="color: #8ec07c">ZPY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">TYA</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">STA</span>
+            <span style="color: #8ec07c">ABY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">TXS</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">TAS</span>
+            <span style="color: #8ec07c">ABY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SHY</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">STA</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SHX</span>
+            <span style="color: #8ec07c">ABY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">AHX</span>
+            <span style="color: #8ec07c">ABY</span>
+          </td>
+        </tr>
+        <tr>
+          <th
+            scope="row"
+            style="
+              padding: 8px;
+              background: #3c3836;
+              color: #fe8019;
+              font-weight: 700;
+              border: 1px solid #504945;
+              white-space: nowrap;
+            "
+          >
+            0xA0
+          </th>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LDY</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LDA</span>
+            <span style="color: #8ec07c">INX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LDX</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LAX</span>
+            <span style="color: #8ec07c">INX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LDY</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LDA</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LDX</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LAX</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">TAY</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LDA</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">TAX</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LAX</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LDY</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LDA</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LDX</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LAX</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+        </tr>
+        <tr>
+          <th
+            scope="row"
+            style="
+              padding: 8px;
+              background: #3c3836;
+              color: #fe8019;
+              font-weight: 700;
+              border: 1px solid #504945;
+              white-space: nowrap;
+            "
+          >
+            0xB0
+          </th>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">BCS</span>
+            <span style="color: #8ec07c">REL</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LDA</span>
+            <span style="color: #8ec07c">INY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">KIL</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LAX</span>
+            <span style="color: #8ec07c">INY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LDY</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LDA</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LDX</span>
+            <span style="color: #8ec07c">ZPY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LAX</span>
+            <span style="color: #8ec07c">ZPY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">CLV</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LDA</span>
+            <span style="color: #8ec07c">ABY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">TSX</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LAS</span>
+            <span style="color: #8ec07c">ABY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LDY</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LDA</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LDX</span>
+            <span style="color: #8ec07c">ABY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">LAX</span>
+            <span style="color: #8ec07c">ABY</span>
+          </td>
+        </tr>
+        <tr>
+          <th
+            scope="row"
+            style="
+              padding: 8px;
+              background: #3c3836;
+              color: #fe8019;
+              font-weight: 700;
+              border: 1px solid #504945;
+              white-space: nowrap;
+            "
+          >
+            0xC0
+          </th>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">CPY</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">CMP</span>
+            <span style="color: #8ec07c">INX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">DCP</span>
+            <span style="color: #8ec07c">INX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">CPY</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">CMP</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">DEC</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">DCP</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">INY</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">CMP</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">DEX</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">AXS</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">CPY</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">CMP</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">DEC</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">DCP</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+        </tr>
+        <tr>
+          <th
+            scope="row"
+            style="
+              padding: 8px;
+              background: #3c3836;
+              color: #fe8019;
+              font-weight: 700;
+              border: 1px solid #504945;
+              white-space: nowrap;
+            "
+          >
+            0xD0
+          </th>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">BNE</span>
+            <span style="color: #8ec07c">REL</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">CMP</span>
+            <span style="color: #8ec07c">INY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">KIL</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">DCP</span>
+            <span style="color: #8ec07c">INY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">CMP</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">DEC</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">DCP</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">CLD</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">CMP</span>
+            <span style="color: #8ec07c">ABY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">DCP</span>
+            <span style="color: #8ec07c">ABY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">CMP</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">DEC</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">DCP</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+        </tr>
+        <tr>
+          <th
+            scope="row"
+            style="
+              padding: 8px;
+              background: #3c3836;
+              color: #fe8019;
+              font-weight: 700;
+              border: 1px solid #504945;
+              white-space: nowrap;
+            "
+          >
+            0xE0
+          </th>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">CPX</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SBC</span>
+            <span style="color: #8ec07c">INX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ISC</span>
+            <span style="color: #8ec07c">INX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">CPX</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SBC</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">INC</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ISC</span>
+            <span style="color: #8ec07c">ZPG</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">INX</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SBC</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SBC</span>
+            <span style="color: #8ec07c">IMM</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">CPX</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SBC</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">INC</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ISC</span>
+            <span style="color: #8ec07c">ABS</span>
+          </td>
+        </tr>
+        <tr>
+          <th
+            scope="row"
+            style="
+              padding: 8px;
+              background: #3c3836;
+              color: #fe8019;
+              font-weight: 700;
+              border: 1px solid #504945;
+              white-space: nowrap;
+            "
+          >
+            0xF0
+          </th>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">BEQ</span>
+            <span style="color: #8ec07c">REL</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SBC</span>
+            <span style="color: #8ec07c">INY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">KIL</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ISC</span>
+            <span style="color: #8ec07c">INY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SBC</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">INC</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ISC</span>
+            <span style="color: #8ec07c">ZPX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SED</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SBC</span>
+            <span style="color: #8ec07c">ABY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">IMP</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ISC</span>
+            <span style="color: #8ec07c">ABY</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #282828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">NOP</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">SBC</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">INC</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+          <td
+            style="
+              padding: 7px 5px;
+              text-align: center;
+              white-space: nowrap;
+              background: #5c2828;
+              color: #ebdbb2;
+              border: 1px solid #504945;
+            "
+          >
+            <span style="color: #fabd2f; font-weight: 700">ISC</span>
+            <span style="color: #8ec07c">ABX</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div
+      style="
+        width: 100%;
+        padding: 12px;
+        box-sizing: border-box;
+        background: #3c2828;
+        color: #ebdbb2;
+        font-family: &quot;JetBrains Mono&quot;, monospace;
+        font-size: 12px;
+        border: 1px solid #504945;
+      "
+    >
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 8px;
+        "
+      >
+        <span style="color: #fabd2f; font-weight: 700">IMPLEMENTED: 111</span>
+        <span style="color: #fe8019; font-weight: 700">REMAINING: 145</span>
+      </div>
+      <div
+        style="
+          height: 14px;
+          background: #282828;
+          border: 1px solid #504945;
+          overflow: hidden;
+        "
+      >
+        <div style="width: 43.359375%; height: 100%; background: #b8bb26"></div>
+      </div>
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          margin-top: 6px;
+          color: #a89984;
+        "
+      >
+        <span>111 / 256</span>
+      </div>
+    </div>
+  </body>
+</html>

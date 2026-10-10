@@ -16,6 +16,8 @@ Logging:
 This project is intended for learning and debugging the 6502 instruction cycle.
 It is not a complete NES emulator or a production-ready game console implementation.
 
+#### [SEE IMPLEMENTATION STATUS](https://badgardener.github.io/nes-6502/)
+
 ## Typical usage
 
 The library is designed to be embedded into a larger emulator or debugger. The public interface exposes a clock function to advance the CPU state:
