@@ -4,7 +4,7 @@
  *
  * ADC: 0x69(imm) 0x65(zpg) 0x75(zpx) 0x6D(abs) 0x7D(abx) 0x79(aby) 0x61(idx) 0x71(idy)
  * AND: 0x29(imm) 0x25(zpg) 0x35(zpx) 0x2D(abs) 0x3D(abx) 0x39(aby) 0x21(idx) 0x31(idy)
- * ASL: 0x0A(acc) 0x06(zpg) 0x16(zpx) 0x0E(abs) 0x1E(abx)
+ * ASL: 0x0A(acc) 0x06(zpg) 0x16(zpx) 0x0E(abs) 0x1E(abx)                               ::IMPLEMENTED::
  * BCC: 0x90(rel)                                                                       ::IMPLEMENTED::
  * BCS: 0xB0(rel)                                                                       ::IMPLEMENTED::
  * BEQ: 0xF0(rel)                                                                       ::IMPLEMENTED::
@@ -34,15 +34,15 @@
  * LDA: 0xA9(imm) 0xA5(zpg) 0xB5(zpx) 0xAD(abs) 0xBD(abx) 0xB9(aby) 0xA1(idx) 0xB1(idy) ::IMPLEMENTED::
  * LDX: 0xA2(imm) 0xA6(zpg) 0xB6(zpy) 0xAE(abs) 0xBE(aby)                               ::IMPLEMENTED::
  * LDY: 0xA0(imm) 0xA4(zpg) 0xB4(zpx) 0xAC(abs) 0xBC(abx)                               ::IMPLEMENTED::
- * LSR: 0x4A(acc) 0x46(zpg) 0x56(zpx) 0x4E(abs) 0x5E(abx)
+ * LSR: 0x4A(acc) 0x46(zpg) 0x56(zpx) 0x4E(abs) 0x5E(abx)                               ::IMPLEMENTED::
  * NOP: 0xEA(imp)                                                                       ::IMPLEMENTED::
  * ORA: 0x09(imm) 0x05(zpg) 0x15(zpx) 0x0D(abs) 0x1D(abx) 0x19(aby) 0x01(idx) 0x11(idy) ::IMPLEMENTED::
  * PHA: 0x48(imp)
  * PHP: 0x08(imp)
  * PLA: 0x68(imp)
  * PLP: 0x28(imp)
- * ROL: 0x2A(acc) 0x26(zpg) 0x36(zpx) 0x2E(abs) 0x3E(abx)
- * ROR: 0x6A(acc) 0x66(zpg) 0x76(zpx) 0x6E(abs) 0x7E(abx)
+ * ROL: 0x2A(acc) 0x26(zpg) 0x36(zpx) 0x2E(abs) 0x3E(abx)                               ::IMPLEMENTED::
+ * ROR: 0x6A(acc) 0x66(zpg) 0x76(zpx) 0x6E(abs) 0x7E(abx)                               ::IMPLEMENTED::
  * RTI: 0x40(imp)
  * RTS: 0x60(imp)
  * SBC: 0xE9(imm) 0xE5(zpg) 0xF5(zpx) 0xED(abs) 0xFD(abx) 0xF9(aby) 0xE1(idx) 0xF1(idy)
@@ -671,9 +671,122 @@ static void execute_jmp(CPU_6502 *c) {
   end_opcode_execution(c);
 }
 
+static void execute_asl(CPU_6502 *c) {
+  switch (c->instr.step) {
+  case 0: {
+    schedule_read(c, c->instr.addr);
+    break;
+  }
+
+  case 1: {
+    c->instr.ptr = read_bus(c);
+    schedule_write(c, c->instr.addr, (ubyte)c->instr.ptr);
+    break;
+  }
+
+  case 2: {
+    ubyte val = ((ubyte)c->instr.ptr << 1) & 0xFF;
+    set_flag(c, flag_c, (ubyte)c->instr.ptr & 0x80);
+    set_flag_zn(c, val);
+    schedule_write(c, c->instr.addr, val);
+    break;
+  }
+
+  case 3: {
+    end_opcode_execution(c);
+    break;
+  }
+  }
+}
+
+static void execute_lsr(CPU_6502 *c) {
+  switch (c->instr.step) {
+  case 0: {
+    schedule_read(c, c->instr.addr);
+    break;
+  }
+
+  case 1: {
+    c->instr.ptr = read_bus(c);
+    schedule_write(c, c->instr.addr, (ubyte)c->instr.ptr);
+    break;
+  }
+
+  case 2: {
+    ubyte val = ((ubyte)c->instr.ptr >> 1) & 0xFF;
+    set_flag(c, flag_c, (ubyte)c->instr.ptr & 1);
+    set_flag_zn(c, val);
+    schedule_write(c, c->instr.addr, val);
+    break;
+  }
+
+  case 3: {
+    end_opcode_execution(c);
+    break;
+  }
+  }
+}
+
+static void execute_rol(CPU_6502 *c) {
+  switch (c->instr.step) {
+  case 0: {
+    schedule_read(c, c->instr.addr);
+    break;
+  }
+
+  case 1: {
+    c->instr.ptr = read_bus(c);
+    schedule_write(c, c->instr.addr, (ubyte)c->instr.ptr);
+    break;
+  }
+
+  case 2: {
+    ubyte val = ((ubyte)(c->instr.ptr << 1) | get_flag(c, flag_c)) & 0xFF;
+    set_flag(c, flag_c, (ubyte)c->instr.ptr & 0x80);
+    set_flag_zn(c, val);
+    schedule_write(c, c->instr.addr, val);
+    break;
+  }
+
+  case 3: {
+    end_opcode_execution(c);
+    break;
+  }
+  }
+}
+
+static void execute_ror(CPU_6502 *c) {
+  switch (c->instr.step) {
+  case 0: {
+    schedule_read(c, c->instr.addr);
+    break;
+  }
+
+  case 1: {
+    c->instr.ptr = read_bus(c);
+    schedule_write(c, c->instr.addr, (ubyte)c->instr.ptr);
+    break;
+  }
+
+  case 2: {
+    bool carry = get_flag(c, flag_c);
+    ubyte val = ((ubyte)(c->instr.ptr >> 1) | (carry << 7)) & 0xFF;
+    set_flag(c, flag_c, (ubyte)c->instr.ptr & 1);
+    set_flag_zn(c, val);
+    schedule_write(c, c->instr.addr, val);
+    break;
+  }
+
+  case 3: {
+    end_opcode_execution(c);
+    break;
+  }
+  }
+}
+
 /** ::TODO::
- * IMPLEMENTED: 95
- * REMAINING:   161
+ * IMPLEMENTED: 111 (43.36%)
+ * REMAINING:   145
  */
 static void do_opcode_cycle(CPU_6502 *c) {
   switch (c->instr.opcode) {
@@ -1345,6 +1458,18 @@ static void do_opcode_cycle(CPU_6502 *c) {
     break;
   }
 
+  case 0x06: { // ASL $ZPG
+    if (!c->instr.addr_fetched) {
+      fetch_zpg(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_asl(c);
+    }
+
+    break;
+  }
+
   case 0x0A: { // ASL $ACC
     switch (c->instr.step) {
     case 0: {
@@ -1366,6 +1491,54 @@ static void do_opcode_cycle(CPU_6502 *c) {
     break;
   }
 
+  case 0x0E: { // ASL $ABS
+    if (!c->instr.addr_fetched) {
+      fetch_abs(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_asl(c);
+    }
+
+    break;
+  }
+
+  case 0x16: { // ASL $ZPX
+    if (!c->instr.addr_fetched) {
+      fetch_zpx(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_asl(c);
+    }
+
+    break;
+  }
+
+  case 0x1E: { // ASL $ABX
+    if (!c->instr.addr_fetched) {
+      fetch_abx(c, true);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_asl(c);
+    }
+
+    break;
+  }
+
+  case 0x46: { // LSR $ZPG
+    if (!c->instr.addr_fetched) {
+      fetch_zpg(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_lsr(c);
+    }
+
+    break;
+  }
+
   case 0x4A: { // LSR $ACC
     switch (c->instr.step) {
     case 0: {
@@ -1382,6 +1555,54 @@ static void do_opcode_cycle(CPU_6502 *c) {
       end_opcode_execution(c);
       break;
     }
+    }
+
+    break;
+  }
+
+  case 0x4E: { // LSR $ABS
+    if (!c->instr.addr_fetched) {
+      fetch_abs(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_lsr(c);
+    }
+
+    break;
+  }
+
+  case 0x56: { // LSR $ZPX
+    if (!c->instr.addr_fetched) {
+      fetch_zpx(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_lsr(c);
+    }
+
+    break;
+  }
+
+  case 0x5E: { // LSR $ABX
+    if (!c->instr.addr_fetched) {
+      fetch_abx(c, true);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_lsr(c);
+    }
+
+    break;
+  }
+
+  case 0x26: { // ROL $ZPG
+    if (!c->instr.addr_fetched) {
+      fetch_zpg(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_rol(c);
     }
 
     break;
@@ -1409,6 +1630,54 @@ static void do_opcode_cycle(CPU_6502 *c) {
     break;
   }
 
+  case 0x2E: { // ROL $ABS
+    if (!c->instr.addr_fetched) {
+      fetch_abs(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_rol(c);
+    }
+
+    break;
+  }
+
+  case 0x36: { // ROL $ZPX
+    if (!c->instr.addr_fetched) {
+      fetch_zpx(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_rol(c);
+    }
+
+    break;
+  }
+
+  case 0x3E: { // ROL $ABX
+    if (!c->instr.addr_fetched) {
+      fetch_abx(c, true);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_rol(c);
+    }
+
+    break;
+  }
+
+  case 0x66: { // ROR $ZPG
+    if (!c->instr.addr_fetched) {
+      fetch_zpg(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_ror(c);
+    }
+
+    break;
+  }
+
   case 0x6A: { // ROR $ACC
     switch (c->instr.step) {
     case 0: {
@@ -1426,6 +1695,42 @@ static void do_opcode_cycle(CPU_6502 *c) {
       end_opcode_execution(c);
       break;
     }
+    }
+
+    break;
+  }
+
+  case 0x6E: { // ROR $ABS
+    if (!c->instr.addr_fetched) {
+      fetch_abs(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_ror(c);
+    }
+
+    break;
+  }
+
+  case 0x76: { // ROR $ZPX
+    if (!c->instr.addr_fetched) {
+      fetch_zpx(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_ror(c);
+    }
+
+    break;
+  }
+
+  case 0x7E: { // ROR $ABX
+    if (!c->instr.addr_fetched) {
+      fetch_abx(c, true);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_ror(c);
     }
 
     break;
