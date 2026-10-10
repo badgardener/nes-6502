@@ -675,6 +675,22 @@ static void execute_ror(CPU_6502 *c) {
   }
 }
 
+static void execute_and(CPU_6502 *c) {
+  switch (c->instr.step) {
+  case 0: {
+    schedule_read(c, c->instr.addr);
+    break;
+  }
+
+  case 1: {
+    c->reg.A &= read_bus(c);
+    set_flag_zn(c, c->reg.A);
+    end_opcode_execution(c);
+    break;
+  }
+  }
+}
+
 /** ::TODO::
  * IMPLEMENTED: 111 (43.36%)
  * REMAINING:   145
@@ -1622,6 +1638,102 @@ static void do_opcode_cycle(CPU_6502 *c) {
 
     if (c->instr.addr_fetched) {
       execute_ror(c);
+    }
+
+    break;
+  }
+
+  case 0x21: { // AND $IDX
+    if (!c->instr.addr_fetched) {
+      fetch_idx(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_and(c);
+    }
+
+    break;
+  }
+
+  case 0x25: { // AND $ZPG
+    if (!c->instr.addr_fetched) {
+      fetch_zpg(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_and(c);
+    }
+
+    break;
+  }
+
+  case 0x29: { // AND $IMM
+    if (!c->instr.addr_fetched) {
+      fetch_imm(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_and(c);
+    }
+
+    break;
+  }
+
+  case 0x2D: { // AND $ABS
+    if (!c->instr.addr_fetched) {
+      fetch_abs(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_and(c);
+    }
+
+    break;
+  }
+
+  case 0x31: { // AND $IDY
+    if (!c->instr.addr_fetched) {
+      fetch_idy(c, false);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_and(c);
+    }
+
+    break;
+  }
+
+  case 0x35: { // AND $ZPX
+    if (!c->instr.addr_fetched) {
+      fetch_zpx(c);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_and(c);
+    }
+
+    break;
+  }
+
+  case 0x39: { // AND $ABY
+    if (!c->instr.addr_fetched) {
+      fetch_aby(c, false);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_and(c);
+    }
+
+    break;
+  }
+
+  case 0x3D: { // AND $ABX
+    if (!c->instr.addr_fetched) {
+      fetch_abx(c, false);
+    }
+
+    if (c->instr.addr_fetched) {
+      execute_and(c);
     }
 
     break;
